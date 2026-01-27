@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     database_url: str
     
     # AI Core
-    ai_core_url: str = "http://localhost:8000"
-    ai_core_timeout: float = 30.0
+    ai_core_url: str
+    ai_core_timeout: float
     
     # Server
     port: int = 3000
