@@ -48,17 +48,19 @@ export const DebugPanel: React.FC = () => {
             </h4>
             <div style={{ fontSize: "0.875rem", color: "#4b5563" }}>
               <div style={{ marginBottom: "0.25rem" }}>
-                <strong>Persona:</strong> {currentMetadata.persona}
+                <strong>Persona:</strong> {currentMetadata.persona || "N/A"}
               </div>
               <div style={{ marginBottom: "0.25rem" }}>
-                <strong>Context:</strong> {currentMetadata.context.context_type}
+                <strong>Context:</strong> {currentMetadata.context?.context_type || "N/A"}
               </div>
               <div style={{ marginBottom: "0.25rem" }}>
                 <strong>Confidence:</strong>{" "}
-                {(currentMetadata.context.confidence * 100).toFixed(1)}%
+                {currentMetadata.context?.confidence !== undefined 
+                  ? (currentMetadata.context.confidence * 100).toFixed(1) + "%"
+                  : "N/A"}
               </div>
               <div style={{ marginBottom: "0.25rem" }}>
-                <strong>Model:</strong> {currentMetadata.model}
+                <strong>Model:</strong> {currentMetadata.model || "N/A"}
               </div>
             </div>
           </div>

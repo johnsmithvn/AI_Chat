@@ -45,28 +45,34 @@ export const SessionHeader: React.FC = () => {
 
         {currentMetadata && (
           <>
-            <div style={{
-              padding: "0.25rem 0.75rem",
-              borderRadius: "9999px",
-              fontSize: "0.875rem",
-              fontWeight: "500",
-              backgroundColor: getPersonaColor(currentMetadata.persona) + "20",
-              color: getPersonaColor(currentMetadata.persona),
-            }}>
-              {currentMetadata.persona}
-            </div>
+            {currentMetadata.persona && (
+              <div style={{
+                padding: "0.25rem 0.75rem",
+                borderRadius: "9999px",
+                fontSize: "0.875rem",
+                fontWeight: "500",
+                backgroundColor: getPersonaColor(currentMetadata.persona) + "20",
+                color: getPersonaColor(currentMetadata.persona),
+              }}>
+                {currentMetadata.persona}
+              </div>
+            )}
 
-            <div>
-              <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>
-                Confidence: {(currentMetadata.context.confidence * 100).toFixed(0)}%
-              </span>
-            </div>
+            {currentMetadata.context?.confidence !== undefined && (
+              <div>
+                <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+                  Confidence: {(currentMetadata.context.confidence * 100).toFixed(0)}%
+                </span>
+              </div>
+            )}
 
-            <div>
-              <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>
-                Model: {currentMetadata.model}
-              </span>
-            </div>
+            {currentMetadata.model && (
+              <div>
+                <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+                  Model: {currentMetadata.model}
+                </span>
+              </div>
+            )}
           </>
         )}
       </div>

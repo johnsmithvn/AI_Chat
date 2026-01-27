@@ -17,21 +17,21 @@ export interface Message {
 }
 
 export interface Context {
-  context_type: string;
-  confidence: number;
-  should_refuse: boolean;
+  context_type?: string;
+  confidence?: number;
+  should_refuse?: boolean;
 }
 
 export interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
 }
 
 export interface Metadata {
-  persona: string;
-  context: Context;
-  model: string;
-  usage: Usage;
+  persona: string | null;
+  context: Context | null;
+  model: string | null;
+  usage: Usage | null;
   valid: boolean;
   warnings: string[];
 }

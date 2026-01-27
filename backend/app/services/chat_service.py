@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 from app.services.ai_core import ai_core_client
 from app.db import crud
 from app.schemas.chat import ChatResponse, MessageCreate, MessageResponse, HistoryResponse
-from app.schemas.common import MetadataSchema
+from app.schemas.common import MetadataSchema, ContextSchema, UsageSchema
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -91,31 +91,58 @@ class ChatService:
         crud.create_message(db, db_session.id, user_msg_data)
         
         # 5. Save assistant response with metadata
-        metadata = ai_response["metadata"]
+        metadata = ai_response.get("metadata", {})
+        context = metadata.get("context", {})
+        model_info = metadata.get("model_info", {})
+        
+        # Extract model name - try multiple locations
+        model_name = None
+        if model_info:
+            model_name = model_info.get("model_name") or model_info.get("model")
+        if not model_name:
+            model_name = metadata.get("model")
+        
+        # Extract usage - could be in model_info or at metadata level
+        usage = {}
+        if model_info:
+            usage = model_info.get("usage", {})
+        if not usage:
+            usage = metadata.get("usage", {})
+        
         assistant_msg_data = MessageCreate(
             role="assistant",
-            content=ai_response["response"],
-            persona=metadata["persona"],
-            context_type=metadata["context"]["context_type"],
-            confidence=metadata["context"]["confidence"],
-            model_name=metadata["model"],
-            prompt_tokens=metadata["usage"]["prompt_tokens"],
-            completion_tokens=metadata["usage"]["completion_tokens"]
+            content=ai_response.get("response", ""),
+            persona=metadata.get("persona"),
+            context_type=context.get("context_type"),
+            confidence=context.get("confidence"),
+            model_name=model_name,
+            prompt_tokens=usage.get("prompt_tokens"),
+            completion_tokens=usage.get("completion_tokens")
         )
         crud.create_message(db, db_session.id, assistant_msg_data)
         
         logger.info(
             "process_message_complete",
             session_id=str(db_session.id),
-            persona=metadata["persona"],
-            confidence=metadata["context"]["confidence"]
+            persona=metadata.get("persona"),
+            confidence=context.get("confidence")
         )
         
         # 6. Return response
+        # Build metadata safely with nested objects
+        metadata_response = MetadataSchema(
+            persona=metadata.get("persona"),
+            context=ContextSchema(**context) if context else None,
+            model=model_name,
+            usage=UsageSchema(**usage) if usage else None,
+            valid=metadata.get("valid", True),
+            warnings=metadata.get("warnings", [])
+        )
+        
         return ChatResponse(
             session_id=str(db_session.id),
-            response=ai_response["response"],
-            metadata=MetadataSchema(**metadata)
+            response=ai_response.get("response", ""),
+            metadata=metadata_response
         )
     
     async def get_history(

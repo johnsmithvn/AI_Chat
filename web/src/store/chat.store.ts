@@ -56,12 +56,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         session_id: response.session_id,
         role: "assistant",
         content: response.response,
-        persona: response.metadata.persona,
-        context_type: response.metadata.context.context_type,
-        confidence: response.metadata.context.confidence,
-        model_name: response.metadata.model,
-        prompt_tokens: response.metadata.usage.prompt_tokens,
-        completion_tokens: response.metadata.usage.completion_tokens,
+        persona: response.metadata.persona || undefined,
+        context_type: response.metadata.context?.context_type || undefined,
+        confidence: response.metadata.context?.confidence || undefined,
+        model_name: response.metadata.model || undefined,
+        prompt_tokens: response.metadata.usage?.prompt_tokens || undefined,
+        completion_tokens: response.metadata.usage?.completion_tokens || undefined,
         created_at: new Date().toISOString(),
       };
 
