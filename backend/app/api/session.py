@@ -8,8 +8,9 @@ from uuid import UUID
 from app.db.base import get_db
 from app.schemas.session import SessionResponse, SessionListResponse
 from app.services.session_service import session_service
-from app.core.config import settings
+from app.middlewares.auth import get_current_user
 from app.core.logging import get_logger
+from app.db import crud
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/session", tags=["session"])
@@ -17,14 +18,14 @@ router = APIRouter(prefix="/session", tags=["session"])
 
 @router.post("", response_model=SessionResponse)
 def create_session(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Create new chat session
     """
     try:
-        # Use default user for now (no auth)
-        user_id = UUID(settings.default_user_id)
+        user_id = UUID(current_user["user_id"])
         
         session = session_service.create_session(db, user_id)
         return session
@@ -37,15 +38,23 @@ def create_session(
 @router.get("/{session_id}", response_model=SessionResponse)
 def get_session(
     session_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get session by ID
     """
     try:
+        # Check ownership
+        if not crud.check_session_ownership(db, session_id, current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="Not authorized to access this session")
+        
         session = session_service.get_session(db, session_id)
         return session
         
+    except HTTPException:
+        raise
+    
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     
@@ -57,14 +66,14 @@ def get_session(
 @router.get("s", response_model=SessionListResponse)
 def list_sessions(
     limit: int = 20,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     List user's sessions
     """
     try:
-        # Use default user for now (no auth)
-        user_id = UUID(settings.default_user_id)
+        user_id = UUID(current_user["user_id"])
         
         sessions = session_service.list_user_sessions(db, user_id, limit)
         return sessions
@@ -77,12 +86,17 @@ def list_sessions(
 @router.delete("/{session_id}")
 def delete_session(
     session_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Delete session and all messages
     """
     try:
+        # Check ownership
+        if not crud.check_session_ownership(db, session_id, current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="Not authorized to delete this session")
+        
         success = session_service.delete_session(db, session_id)
         
         if success:
@@ -95,4 +109,23 @@ def delete_session(
     
     except Exception as e:
         logger.error("delete_session_error", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal error")
+
+
+@router.delete("")
+def delete_all_sessions(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Delete ALL sessions for current user
+    """
+    try:
+        deleted_count = crud.delete_all_user_sessions(db, current_user["user_id"])
+        logger.info(f"Deleted {deleted_count} sessions for user {current_user['user_id']}")
+        
+        return {"deleted": deleted_count}
+        
+    except Exception as e:
+        logger.error("delete_all_sessions_error", error=str(e))
         raise HTTPException(status_code=500, detail="Internal error")

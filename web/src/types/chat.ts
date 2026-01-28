@@ -42,3 +42,11 @@ export interface ChatState {
   loading: boolean;
   error: string | null;
 }
+
+export interface SessionListItem {
+  id: string;
+  title: string | null;
+  message_count: number;
+  last_active_at: string;
+  created_at: string;
+}

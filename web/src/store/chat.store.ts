@@ -3,15 +3,21 @@
  */
 import { create } from "zustand";
 import { chatApi } from "../services/chat.api";
-import type { Message, ChatState, Metadata } from "../types/chat";
+import type { Message, ChatState, Metadata, SessionListItem } from "../types/chat";
 
 interface ChatStore extends ChatState {
   currentMetadata: Metadata | null;
+  sessions: SessionListItem[];
+  currentSessionId: string | null;
   
   // Actions
   sendMessage: (message: string) => Promise<void>;
-  createNewSession: () => Promise<void>;
+  createSession: () => Promise<void>;
   loadHistory: (sessionId: string) => Promise<void>;
+  loadSessions: () => Promise<void>;
+  selectSession: (sessionId: string) => Promise<void>;
+  deleteSession: (sessionId: string) => Promise<void>;
+  deleteAllSessions: () => Promise<void>;
   clearSession: () => void;
   setError: (error: string | null) => void;
 }
@@ -22,6 +28,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   loading: false,
   error: null,
   currentMetadata: null,
+  sessions: [],
+  currentSessionId: null,
 
   sendMessage: async (message: string) => {
     set({ loading: true, error: null });
@@ -84,23 +92,75 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }
   },
 
-  createNewSession: async () => {
+  createSession: async () => {
     set({ loading: true, error: null });
     
     try {
       const response = await chatApi.createSession();
       set({
         sessionId: response.id,
+        currentSessionId: response.id,
         messages: [],
         currentMetadata: null,
         loading: false,
       });
+      // Reload sessions list
+      await get().loadSessions();
     } catch (error: unknown) {
       console.error("Create session error:", error);
       set({
         error: "Failed to create new session",
         loading: false,
       });
+    }
+  },
+
+  loadSessions: async () => {
+    try {
+      const response = await chatApi.listSessions();
+      set({ sessions: response.sessions });
+    } catch (error: unknown) {
+      console.error("Load sessions error:", error);
+    }
+  },
+
+  selectSession: async (sessionId: string) => {
+    set({ currentSessionId: sessionId });
+    await get().loadHistory(sessionId);
+  },
+
+  deleteSession: async (sessionId: string) => {
+    try {
+      await chatApi.deleteSession(sessionId);
+      
+      // Remove from list
+      set((state) => ({
+        sessions: state.sessions.filter((s) => s.id !== sessionId),
+      }));
+      
+      // If current session deleted, clear
+      if (get().currentSessionId === sessionId) {
+        get().clearSession();
+      }
+    } catch (error: unknown) {
+      console.error("Delete session error:", error);
+      set({ error: "Failed to delete session" });
+    }
+  },
+
+  deleteAllSessions: async () => {
+    try {
+      const result = await chatApi.deleteAllSessions();
+      console.log(`Deleted ${result.deleted} sessions`);
+      
+      // Clear all sessions from list
+      set({ sessions: [] });
+      
+      // Clear current session
+      get().clearSession();
+    } catch (error: unknown) {
+      console.error("Delete all sessions error:", error);
+      set({ error: "Failed to delete all sessions" });
     }
   },
 

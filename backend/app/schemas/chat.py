@@ -1,7 +1,7 @@
 """
 Chat-related Pydantic schemas
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
@@ -24,6 +24,7 @@ class ChatResponse(BaseModel):
 
 class MessageCreate(BaseModel):
     """Schema for creating a message"""
+    model_config = ConfigDict(protected_namespaces=())
     role: str = Field(..., pattern="^(user|assistant)$")
     content: str
     persona: Optional[str] = None
@@ -36,6 +37,7 @@ class MessageCreate(BaseModel):
 
 class MessageResponse(BaseModel):
     """Message response schema"""
+    model_config = ConfigDict(protected_namespaces=(), from_attributes=True)
     id: UUID
     session_id: UUID
     role: str
@@ -47,9 +49,6 @@ class MessageResponse(BaseModel):
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class HistoryResponse(BaseModel):

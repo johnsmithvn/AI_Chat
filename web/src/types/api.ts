@@ -1,7 +1,7 @@
 /**
  * API request/response types
  */
-import { Metadata, Message } from "./chat";
+import type { Metadata, Message, SessionListItem } from "./chat";
 
 export interface ChatRequest {
   message: string;
@@ -26,4 +26,8 @@ export interface SessionResponse {
 export interface HistoryResponse {
   session_id: string;
   messages: Message[];
+}
+
+export interface SessionListResponse {
+  sessions: SessionListItem[];
 }

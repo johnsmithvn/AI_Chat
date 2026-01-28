@@ -3,13 +3,22 @@
  */
 import axios from "axios";
 import { API_BASE_URL } from "../config/env";
-import type { ChatRequest, ChatResponse, SessionResponse, HistoryResponse } from "../types/api";
+import type { ChatRequest, ChatResponse, SessionResponse, HistoryResponse, SessionListResponse } from "../types/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const chatApi = {
@@ -47,5 +56,21 @@ export const chatApi = {
    */
   deleteSession: async (sessionId: string): Promise<void> => {
     await api.delete(`/session/${sessionId}`);
+  },
+
+  /**
+   * List user sessions
+   */
+  listSessions: async (): Promise<SessionListResponse> => {
+    const response = await api.get<SessionListResponse>("/sessions");
+    return response.data;
+  },
+
+  /**
+   * Delete all user sessions
+   */
+  deleteAllSessions: async (): Promise<{ deleted: number }> => {
+    const response = await api.delete<{ deleted: number }>("/sessions");
+    return response.data;
   },
 };

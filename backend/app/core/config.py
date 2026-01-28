@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     
-    # Default user (for testing without auth)
+    # JWT Authentication
+    jwt_secret_key: str
+    jwt_algorithm: str = "HS256"
+    jwt_expiry_hours: int = 24
+    
+    # Default user (for testing without auth - will be removed)
     default_user_id: str = "00000000-0000-0000-0000-000000000001"
     default_user_name: str = "Test User"
     
