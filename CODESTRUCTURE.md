@@ -1,527 +1,366 @@
-# 📋 AI CHAT V2 - CODE STRUCTURE SUMMARY
+# 📋 AI Chat V2 - Code Structure
 
-**Version**: 2.0.0  
-**Date**: 2026-01-28  
-**Status**: ✅ COMPLETED (Backend + Frontend)
+**Complete codebase reference** - Updated 2026-01-28
 
 ---
 
-## 🎯 PROJECT STATUS
-
-### ✅ COMPLETED
-- Backend authentication với JWT
-- Frontend login/register pages
-- Session management với ownership
-- Database migration applied
-- Sidebar + TopBar layout
-
-### ⚠️ ISSUES DETECTED
-
-#### 1. **FILE REDUNDANCY**
-- ❌ `SessionHeader.tsx` - **KHÔNG CÒN DÙNG**
-  - File cũ từ v1.0, giờ dùng `TopBar.tsx` thay thế
-  - Cần xóa để tránh confusion
-  
-#### 2. **FUNCTION NAME MISMATCH**
-- ❌ `chat.store.ts` có function `createNewSession()` 
-- ❌ Nhưng đã đổi thành `createSession()`
-- ❌ `SessionHeader.tsx` vẫn gọi `createNewSession()` (sai)
-
-#### 3. **API ENDPOINT MISMATCH**
-- ❌ `chat.api.ts` gọi `GET /sessions`
-- ❌ Nhưng backend là `GET /session/sessions` hoặc `GET /sessions`
-- Cần check backend route thực tế
-
----
-
-## 📁 PROJECT STRUCTURE
+## 📁 Complete File Structure
 
 ```
 AI_Chat_2/
 │
-├── backend/                          # FastAPI Backend
+├── backend/                          # FastAPI Backend (Python 3.11)
 │   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                   # FastAPI app entry point
+│   │   │
 │   │   ├── api/                      # REST API Endpoints
-│   │   │   ├── auth.py              ✅ JWT auth endpoints
-│   │   │   ├── chat.py              ✅ Chat với ownership check
-│   │   │   ├── session.py           ✅ Session CRUD với JWT
-│   │   │   ├── health.py            ✅ Health check
-│   │   │   └── debug.py             ✅ Debug utilities
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py              # POST /auth/register, /auth/login
+│   │   │   │                        # GET /auth/me, PUT /auth/me
+│   │   │   ├── chat.py              # POST /chat, GET /chat/history/{id}
+│   │   │   ├── session.py           # CRUD /session, /sessions
+│   │   │   ├── health.py            # GET /, /health
+│   │   │   └── debug.py             # GET /debug/message/{id}, /debug/session/{id}/events
 │   │   │
-│   │   ├── core/                     # Core utilities
-│   │   │   ├── config.py            ✅ Settings + JWT config
-│   │   │   ├── auth.py              ✅ JWT + bcrypt utilities
-│   │   │   └── logging.py           ✅ Structured logging
+│   │   ├── core/                     # Core Utilities
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py            # Settings class (env-based config)
+│   │   │   ├── auth.py              # hash_password(), verify_password()
+│   │   │   │                        # create_access_token(), decode_access_token()
+│   │   │   └── logging.py           # Structlog setup, get_logger()
 │   │   │
-│   │   ├── db/                       # Database layer
-│   │   │   ├── base.py              ✅ SQLAlchemy setup
-│   │   │   ├── models.py            ✅ User/Session/Message models
-│   │   │   └── crud.py              ✅ CRUD + auth operations
+│   │   ├── db/                       # Database Layer
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py              # SQLAlchemy engine, SessionLocal, get_db()
+│   │   │   ├── models.py            # User, ChatSession, Message, Event models
+│   │   │   └── crud.py              # All CRUD operations
 │   │   │
-│   │   ├── middlewares/             # FastAPI middlewares
-│   │   │   ├── auth.py              ✅ JWT middleware
-│   │   │   └── request_id.py        ✅ Request tracking
+│   │   ├── middlewares/             # FastAPI Middlewares
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py              # get_current_user() - JWT validation
+│   │   │   └── request_id.py        # RequestIDMiddleware - X-Request-ID header
 │   │   │
-│   │   ├── schemas/                  # Pydantic schemas
-│   │   │   ├── auth.py              ✅ Auth request/response
-│   │   │   ├── chat.py              ✅ Chat schemas
-│   │   │   ├── session.py           ✅ Session schemas
-│   │   │   └── common.py            ✅ Shared schemas
+│   │   ├── schemas/                  # Pydantic Schemas (DTOs)
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py              # RegisterRequest, LoginRequest, TokenResponse, UserResponse
+│   │   │   ├── chat.py              # ChatRequest, ChatResponse, MessageCreate, MessageResponse
+│   │   │   ├── session.py           # SessionCreate, SessionResponse, SessionListResponse
+│   │   │   └── common.py            # MetadataSchema
 │   │   │
-│   │   ├── services/                 # Business logic
-│   │   │   ├── ai_core.py           ✅ AI Core client
-│   │   │   ├── chat_service.py      ✅ Chat orchestration
-│   │   │   └── session_service.py   ✅ Session management
-│   │   │
-│   │   └── main.py                   ✅ FastAPI app entry
+│   │   └── services/                 # Business Logic
+│   │       ├── __init__.py
+│   │       ├── ai_core.py           # AICoreClient - HTTP client for AI Core
+│   │       ├── chat_service.py      # ChatService - process_message(), get_history()
+│   │       └── session_service.py   # SessionService - create, list, delete sessions
 │   │
-│   ├── migrations/                   # Alembic migrations
-│   │   ├── versions/
-│   │   │   └── 2026_01_28_*.py     ✅ Auth migration
-│   │   └── env.py                   ✅ Alembic config
+│   ├── migrations/                   # Alembic Migrations
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   │   └── versions/
+│   │       └── 2026_01_28_*.py      # Auth & session features migration
 │   │
-│   ├── alembic.ini                  ✅ Alembic config
-│   ├── requirements.txt             ✅ Python deps
-│   └── .env                         ✅ Environment vars
+│   ├── alembic.ini                  # Alembic configuration
+│   ├── requirements.txt             # Python dependencies
+│   ├── main.py                      # Entry point (imports app.main)
+│   └── .env                         # Environment variables
 │
-├── web/                              # React Frontend
+├── web/                              # React Frontend (TypeScript + Vite)
 │   ├── src/
+│   │   ├── main.tsx                 # React entry point
+│   │   ├── App.tsx                  # Router configuration
+│   │   ├── App.css                  # Global styles
+│   │   ├── index.css                # Reset styles
+│   │   │
 │   │   ├── components/
 │   │   │   ├── auth/
-│   │   │   │   └── ProtectedRoute.tsx  ✅ Route guard
+│   │   │   │   └── ProtectedRoute.tsx    # Auth guard - redirects to /login
 │   │   │   │
 │   │   │   ├── chat/
-│   │   │   │   ├── ChatWindow.tsx      ✅ Main chat UI
-│   │   │   │   ├── ChatInput.tsx       ✅ Input component
-│   │   │   │   ├── MessageList.tsx     ✅ Message list
-│   │   │   │   ├── MessageBubble.tsx   ✅ Message bubble
-│   │   │   │   ├── DebugPanel.tsx      ✅ AI metadata debug
-│   │   │   │   └── SessionHeader.tsx   ⚠️ DEPRECATED (xóa đi)
+│   │   │   │   ├── ChatWindow.tsx        # Main chat container
+│   │   │   │   ├── ChatInput.tsx         # Message input with send button
+│   │   │   │   ├── MessageList.tsx       # Renders all messages
+│   │   │   │   ├── MessageBubble.tsx     # Single message with persona colors
+│   │   │   │   └── DebugPanel.tsx        # AI metadata display
 │   │   │   │
 │   │   │   └── layout/
-│   │   │       ├── Sidebar.tsx         ✅ Session list
-│   │   │       ├── Sidebar.css         ✅ Sidebar styles
-│   │   │       ├── TopBar.tsx          ✅ User menu
-│   │   │       └── TopBar.css          ✅ TopBar styles
+│   │   │       ├── Sidebar.tsx           # Session list, new chat, delete all
+│   │   │       ├── Sidebar.css
+│   │   │       ├── TopBar.tsx            # User menu, logout
+│   │   │       └── TopBar.css
 │   │   │
 │   │   ├── pages/
-│   │   │   ├── ChatPage.tsx         ✅ Main chat page
-│   │   │   ├── ChatPage.css         ✅ Layout styles
-│   │   │   ├── LoginPage.tsx        ✅ Login UI
-│   │   │   └── RegisterPage.tsx     ✅ Register UI
+│   │   │   ├── ChatPage.tsx         # Main chat page (protected)
+│   │   │   ├── ChatPage.css
+│   │   │   ├── LoginPage.tsx        # Login form
+│   │   │   └── RegisterPage.tsx     # Registration form
 │   │   │
 │   │   ├── services/
-│   │   │   ├── auth.api.ts          ✅ Auth API calls
-│   │   │   └── chat.api.ts          ✅ Chat API calls
+│   │   │   ├── auth.api.ts          # authApi - login, register, getMe, updateMe
+│   │   │   └── chat.api.ts          # chatApi - sendMessage, createSession, etc.
 │   │   │
 │   │   ├── store/
-│   │   │   ├── auth.store.ts        ✅ Auth state (Zustand)
-│   │   │   └── chat.store.ts        ✅ Chat state (Zustand)
+│   │   │   ├── auth.store.ts        # AuthStore (Zustand) - user, token, login/logout
+│   │   │   └── chat.store.ts        # ChatStore (Zustand) - messages, sessions, send
 │   │   │
 │   │   ├── types/
-│   │   │   ├── auth.ts              ✅ Auth types
-│   │   │   ├── api.ts               ✅ API types
-│   │   │   └── chat.ts              ✅ Chat types
+│   │   │   ├── auth.ts              # User, LoginRequest, RegisterRequest
+│   │   │   ├── chat.ts              # Message, Session, ChatMetadata
+│   │   │   └── api.ts               # API response types
 │   │   │
 │   │   ├── styles/
-│   │   │   └── auth.css             ✅ Auth page styles
+│   │   │   └── auth.css             # Login/Register page styles
 │   │   │
-│   │   ├── config/
-│   │   │   └── env.ts               ✅ Environment config
-│   │   │
-│   │   ├── App.tsx                  ✅ Router setup
-│   │   └── main.tsx                 ✅ App entry
+│   │   └── config/
+│   │       └── env.ts               # API_URL from environment
 │   │
-│   └── package.json                 ✅ Dependencies
+│   ├── public/
+│   ├── index.html
+│   ├── package.json                 # NPM dependencies
+│   ├── tsconfig.json
+│   ├── tsconfig.app.json
+│   ├── tsconfig.node.json
+│   ├── vite.config.ts               # Vite configuration
+│   └── eslint.config.js
 │
 ├── docs/                             # Documentation
-│   ├── STRUCTURE.md                 ✅ V1 architecture
-│   ├── API_REFERENCE.md             ✅ API docs
-│   ├── DATABASE_SCHEMA.md           ✅ DB schema
-│   └── CODEBASE_GUIDE.md            ✅ Code guide
+│   ├── API_REFERENCE.md             # API documentation
+│   ├── DATABASE_SCHEMA.md           # Database schema
+│   └── CODEBASE_GUIDE.md            # Developer guide
 │
-├── TODO.md                          ✅ V1 tasks (completed)
-├── TODO_V2.md                       ✅ V2 tasks (reference)
-└── CODESTRUCTURE.md                 📍 THIS FILE
+├── docker-compose.yml               # PostgreSQL container
+├── README.md                        # Project overview
+├── CODESTRUCTURE.md                 # This file
+├── CHANGELOG.md                     # Version history
+├── TODO.md                          # V1 tasks
+└── TODO_V2.md                       # V2 tasks
 ```
 
 ---
 
-## 🔧 BACKEND ARCHITECTURE
+## 🔧 Backend Components
 
-### Authentication Flow
-```
-User Register/Login
-    ↓
-POST /auth/register | /auth/login
-    ↓
-bcrypt password hash
-    ↓
-JWT token generated (24h)
-    ↓
-Return {access_token, user}
-    ↓
-Frontend saves to localStorage
-    ↓
-All requests include: Authorization: Bearer <token>
-```
+### API Endpoints (14 total)
 
-### API Endpoints
+| File | Method | Endpoint | Auth | Description |
+|------|--------|----------|------|-------------|
+| health.py | GET | `/` | ❌ | Root check |
+| health.py | GET | `/health` | ❌ | Health check |
+| auth.py | POST | `/auth/register` | ❌ | Register user |
+| auth.py | POST | `/auth/login` | ❌ | Login user |
+| auth.py | GET | `/auth/me` | ✅ | Get current user |
+| auth.py | PUT | `/auth/me` | ✅ | Update profile |
+| auth.py | POST | `/auth/logout` | ❌ | Logout (no-op) |
+| chat.py | POST | `/chat` | ✅ | Send message |
+| chat.py | GET | `/chat/history/{id}` | ✅ | Get history |
+| session.py | POST | `/session` | ✅ | Create session |
+| session.py | GET | `/session/{id}` | ✅ | Get session |
+| session.py | GET | `/sessions` | ✅ | List sessions |
+| session.py | DELETE | `/session/{id}` | ✅ | Delete session |
+| session.py | DELETE | `/sessions` | ✅ | Delete all |
+| debug.py | GET | `/debug/message/{id}` | ❌ | Get message metadata |
+| debug.py | GET | `/debug/session/{id}/events` | ❌ | Get session events |
 
-#### Auth (`/auth/*`)
-```
-POST   /auth/register        - Register new user
-POST   /auth/login           - Login user
-GET    /auth/me              - Get current user (JWT required)
-PUT    /auth/me              - Update profile (JWT required)
-POST   /auth/logout          - Logout (client-side clear)
-```
+### Database Models (4 tables)
 
-#### Chat (`/chat/*`)
-```
-POST   /chat                 - Send message (JWT required)
-                              - Auto-create session if new
-                              - Check ownership if session_id provided
-                              
-GET    /chat/history/{id}    - Get history (JWT required)
-                              - Ownership check
-```
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| User | users | id, email, password_hash, name |
+| ChatSession | chat_sessions | id, user_id, ai_session_id, title |
+| Message | messages | id, session_id, role, content, persona |
+| Event | events | id, session_id, type, payload |
 
-#### Session (`/session/*`)
-```
-POST   /session              - Create session (JWT required)
-GET    /session/{id}         - Get session (JWT + ownership)
-GET    /sessions             - List user sessions (JWT required)
-                              - Only active (is_archived=0)
-                              
-DELETE /session/{id}         - Delete session (JWT + ownership)
-```
+### Services
 
-#### Health
-```
-GET    /health               - Health check (no auth)
-GET    /debug/sessions       - Debug sessions (no auth - dev only)
-```
+| Service | File | Methods |
+|---------|------|---------|
+| AICoreClient | ai_core.py | chat(), get_history(), cleanup() |
+| ChatService | chat_service.py | process_message(), get_history() |
+| SessionService | session_service.py | create(), get(), list(), delete() |
 
-### Database Schema
+### CRUD Operations (crud.py)
 
-#### Users Table
-```sql
-users:
-  id              UUID PRIMARY KEY
-  email           TEXT UNIQUE NOT NULL
-  password_hash   TEXT NOT NULL
-  name            TEXT NOT NULL
-  avatar_url      TEXT
-  created_at      TIMESTAMP DEFAULT NOW()
-  last_login_at   TIMESTAMP
-  
-  INDEX: email
-```
-
-#### Chat Sessions Table
-```sql
-chat_sessions:
-  id              UUID PRIMARY KEY
-  user_id         UUID FK(users.id) CASCADE
-  ai_session_id   TEXT UNIQUE NOT NULL
-  title           TEXT
-  message_count   INTEGER DEFAULT 0
-  is_archived     INTEGER DEFAULT 0
-  created_at      TIMESTAMP DEFAULT NOW()
-  last_active_at  TIMESTAMP DEFAULT NOW()
-  
-  INDEX: user_id
-  INDEX: last_active_at
-```
-
-#### Messages Table
-```sql
-messages:
-  id                UUID PRIMARY KEY
-  session_id        UUID FK(chat_sessions.id) CASCADE
-  role              TEXT CHECK IN ('user','assistant')
-  content           TEXT NOT NULL
-  persona           TEXT
-  context_type      TEXT
-  confidence        FLOAT
-  model_name        TEXT
-  prompt_tokens     INTEGER
-  completion_tokens INTEGER
-  created_at        TIMESTAMP DEFAULT NOW()
-```
-
-#### Events Table
-```sql
-events:
-  id          UUID PRIMARY KEY
-  session_id  UUID FK(chat_sessions.id) CASCADE
-  type        TEXT NOT NULL
-  payload     JSONB
-  created_at  TIMESTAMP DEFAULT NOW()
-```
+| Category | Functions |
+|----------|-----------|
+| User | create_user, get_user, get_user_by_email, update_user, update_user_last_login |
+| Session | create_session, get_session, get_session_by_ai_id, list_user_sessions, update_session, delete_session, delete_all_user_sessions |
+| Message | create_message, get_messages_by_session, get_message |
+| Event | create_event, get_events_by_session |
 
 ---
 
-## 🎨 FRONTEND ARCHITECTURE
+## 🎨 Frontend Components
 
-### Authentication Flow
-```
-1. User visits / → redirects to /login (if no token)
-2. User fills login form → POST /auth/login
-3. Store token in localStorage
-4. Navigate to /
-5. ProtectedRoute checks token → loads user info
-6. All API calls auto-attach: Authorization: Bearer <token>
-```
+### Pages (3)
 
-### State Management (Zustand)
+| Page | Route | Description |
+|------|-------|-------------|
+| LoginPage | `/login` | Login form |
+| RegisterPage | `/register` | Registration form |
+| ChatPage | `/` | Main chat (protected) |
 
-#### Auth Store (`auth.store.ts`)
+### Components (9)
+
+| Category | Component | Description |
+|----------|-----------|-------------|
+| auth | ProtectedRoute | Route guard, redirects to login |
+| layout | Sidebar | Session list, new chat button |
+| layout | TopBar | User menu, logout button |
+| chat | ChatWindow | Main chat container |
+| chat | ChatInput | Text input with send |
+| chat | MessageList | Renders messages |
+| chat | MessageBubble | Single message display |
+| chat | DebugPanel | AI metadata viewer |
+
+### Stores (Zustand)
+
+#### AuthStore (auth.store.ts)
 ```typescript
-State:
-  - user: User | null
-  - token: string | null
-  - isLoading: boolean
-  - error: string | null
-
-Actions:
-  - login(email, password)
-  - register(email, password, name)
-  - logout()
-  - loadUser()
-  - clearError()
+State: { user, token, isLoading, error }
+Actions: login(), register(), logout(), loadUser(), clearError()
 ```
 
-#### Chat Store (`chat.store.ts`)
+#### ChatStore (chat.store.ts)
 ```typescript
-State:
-  - sessionId: string | null
-  - messages: Message[]
-  - loading: boolean
-  - error: string | null
-  - currentMetadata: Metadata | null
-  - sessions: SessionListItem[]
-  - currentSessionId: string | null
-
-Actions:
-  - sendMessage(message)
-  - createSession()
-  - loadSessions()
-  - selectSession(id)
-  - deleteSession(id)
-  - loadHistory(id)
-  - clearSession()
+State: { messages, sessions, currentSessionId, loading, error, currentMetadata }
+Actions: sendMessage(), createSession(), loadHistory(), loadSessions(), 
+         selectSession(), deleteSession(), deleteAllSessions(), clearSession()
 ```
 
-### Component Hierarchy
+### API Services
+
+#### authApi (auth.api.ts)
+- login(email, password)
+- register(email, password, name)
+- getMe()
+- updateMe(data)
+- logout()
+
+#### chatApi (chat.api.ts)
+- sendMessage(message, sessionId)
+- createSession()
+- getHistory(sessionId)
+- deleteSession(sessionId)
+- listSessions()
+- deleteAllSessions()
+
+---
+
+## 🔐 Authentication Flow
+
 ```
-App.tsx (Router)
-  ├── /login → LoginPage
-  ├── /register → RegisterPage
-  └── / → ProtectedRoute
-           └── ChatPage
-                ├── Sidebar
-                │   └── Session list với delete buttons
-                │
-                ├── TopBar
-                │   └── User menu + logout
-                │
-                └── chat-content
-                    ├── ChatWindow
-                    │   ├── MessageList
-                    │   │   └── MessageBubble (x N)
-                    │   └── ChatInput
-                    │
-                    └── DebugPanel
-                        └── AI metadata display
+1. User visits /login or /register
+2. Submit credentials → POST /auth/login or /auth/register
+3. Backend validates, returns { access_token, user }
+4. Frontend stores token in localStorage
+5. authStore.login() updates state
+6. Navigate to / (ChatPage)
+7. ProtectedRoute checks token → loads user info
+8. All API calls include: Authorization: Bearer <token>
+9. Token expires in 24 hours
 ```
 
 ---
 
-## 🐛 ISSUES TO FIX
+## 🗄️ Database Schema
 
-### 🔴 CRITICAL (Must Fix Now)
+### users
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PRIMARY KEY |
+| email | TEXT | UNIQUE, NOT NULL |
+| password_hash | TEXT | NOT NULL |
+| name | TEXT | NOT NULL |
+| avatar_url | TEXT | NULLABLE |
+| created_at | TIMESTAMP | DEFAULT NOW() |
+| last_login_at | TIMESTAMP | NULLABLE |
 
-#### Issue #1: SessionHeader.tsx still exists
-**Problem**: Old v1.0 component không còn dùng  
-**Impact**: Code confusion, không được import nhưng vẫn tồn tại  
-**Fix**:
-```bash
-# Delete this file:
-rm web/src/components/chat/SessionHeader.tsx
-```
+### chat_sessions
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PRIMARY KEY |
+| user_id | UUID | FK(users.id) CASCADE |
+| ai_session_id | TEXT | UNIQUE, NOT NULL |
+| title | TEXT | NULLABLE |
+| message_count | INTEGER | DEFAULT 0 |
+| is_archived | INTEGER | DEFAULT 0 |
+| created_at | TIMESTAMP | DEFAULT NOW() |
+| last_active_at | TIMESTAMP | DEFAULT NOW() |
 
-#### Issue #2: Function name mismatch in chat.store.ts
-**Problem**: Defined `createSession()` nhưng SessionHeader gọi `createNewSession()`  
-**Impact**: SessionHeader bị lỗi nếu được sử dụng  
-**Fix**: Đã không còn dùng SessionHeader, chỉ cần xóa file
+### messages
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PRIMARY KEY |
+| session_id | UUID | FK(chat_sessions.id) CASCADE |
+| role | TEXT | CHECK('user','assistant') |
+| content | TEXT | NOT NULL |
+| persona | TEXT | NULLABLE |
+| context_type | TEXT | NULLABLE |
+| confidence | FLOAT | NULLABLE |
+| model_name | TEXT | NULLABLE |
+| prompt_tokens | INTEGER | NULLABLE |
+| completion_tokens | INTEGER | NULLABLE |
+| created_at | TIMESTAMP | DEFAULT NOW() |
 
-#### Issue #3: API endpoint mismatch
-**Problem**: `chat.api.ts` gọi `GET /sessions` nhưng backend có thể là `/session/sessions`  
-**Current Code** (chat.api.ts):
-```typescript
-listSessions: async (): Promise<SessionListResponse> => {
-  const response = await api.get<SessionListResponse>("/sessions");
-  return response.data;
-},
-```
-
-**Backend Route** (session.py):
-```python
-@router.get("s", response_model=SessionListResponse)  # /session + "s" = /sessions
-def list_sessions(...):
-```
-
-**Status**: ✅ Actually CORRECT - backend route IS `/sessions`  
-**Reason**: Router prefix is `/session`, route is `s`, FastAPI joins them
-
-
-### 🟡 IMPROVEMENTS (Nice to Have)
-
-#### 1. Add session title auto-generation
-**Current**: Sessions have `title` field but not populated  
-**Fix**: Add title generation from first message
-
-#### 2. Add "Delete All Sessions" button
-**Backend**: `crud.delete_all_user_sessions()` exists  
-**Frontend**: Need to add button in Sidebar  
-**Endpoint**: Need to add `DELETE /sessions` route
-
-#### 3. Update message_count automatically
-**Current**: Field exists but not updated  
-**Fix**: Increment in `crud.create_message()`
+### events
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PRIMARY KEY |
+| session_id | UUID | FK(chat_sessions.id) CASCADE |
+| type | TEXT | NOT NULL |
+| payload | JSONB | NULLABLE |
+| created_at | TIMESTAMP | DEFAULT NOW() |
 
 ---
 
-## 🔥 QUICK FIXES NEEDED
+## 📦 Dependencies
 
-### Fix #1: Delete SessionHeader.tsx
-```bash
-cd web/src/components/chat
-rm SessionHeader.tsx
-```
+### Backend (requirements.txt)
+| Package | Version | Purpose |
+|---------|---------|---------|
+| fastapi | 0.109.0 | Web framework |
+| uvicorn[standard] | 0.27.0 | ASGI server |
+| pydantic | 2.5.3 | Validation |
+| pydantic-settings | 2.1.0 | Settings |
+| sqlalchemy | 2.0.25 | ORM |
+| psycopg2-binary | 2.9.9 | PostgreSQL driver |
+| alembic | 1.13.1 | Migrations |
+| httpx | 0.26.0 | HTTP client |
+| structlog | 24.1.0 | Logging |
+| python-jose[cryptography] | 3.3.0 | JWT |
+| passlib[bcrypt] | 1.7.4 | Password hashing |
+| bcrypt | 4.0.1 | Bcrypt backend |
+| python-multipart | 0.0.6 | Form data |
+| python-dotenv | 1.0.0 | Env loading |
+| email-validator | 2.x | Email validation |
 
-### Fix #2: Add DELETE /sessions endpoint
-**File**: `backend/app/api/session.py`
-```python
-@router.delete("s")
-async def delete_all_sessions(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
-):
-    """Delete ALL sessions for current user"""
-    count = crud.delete_all_user_sessions(db, current_user["user_id"])
-    return {"deleted": count}
-```
-
-### Fix #3: Add "Delete All" button in Sidebar
-**File**: `web/src/components/layout/Sidebar.tsx`
-```tsx
-const handleDeleteAll = async () => {
-  if (confirm('Delete ALL conversations? This cannot be undone!')) {
-    await chatApi.deleteAllSessions();
-    await loadSessions();
-  }
-};
-
-// Add button in sidebar-header:
-<button className="btn-delete-all" onClick={handleDeleteAll}>
-  Delete All
-</button>
-```
+### Frontend (package.json)
+| Package | Version | Purpose |
+|---------|---------|---------|
+| react | 19.2.0 | UI framework |
+| react-dom | 19.2.0 | DOM rendering |
+| react-router-dom | 7.13.0 | Routing |
+| zustand | 5.0.10 | State management |
+| axios | 1.13.3 | HTTP client |
+| jwt-decode | 4.0.0 | JWT parsing |
+| typescript | 5.8.3 | Type safety |
+| vite | 6.3.3 | Build tool |
 
 ---
 
-## 📊 COMPLETION STATUS
+## ✅ Status
 
-### Backend ✅ 100%
-- [x] JWT authentication
-- [x] User registration/login
-- [x] Session management
-- [x] Ownership checks
-- [x] Database migration
-- [x] CRUD operations
-- [ ] Delete all sessions endpoint (missing)
-- [ ] Auto-generate session titles (missing)
-
-### Frontend ✅ 95%
-- [x] Login/Register pages
-- [x] Protected routes
-- [x] Auth store
-- [x] Chat store
-- [x] Sidebar with sessions
-- [x] TopBar with user menu
-- [x] Delete single session
-- [ ] Delete all sessions button (missing)
-- [x] Session switching
-- [x] Layout integration
-
-### Database ✅ 100%
-- [x] Auth fields added
-- [x] Migration applied
-- [x] Indexes created
-- [x] Existing data migrated
+| Component | Status |
+|-----------|--------|
+| Backend API | ✅ Complete |
+| Database Models | ✅ Complete |
+| JWT Authentication | ✅ Complete |
+| Session Management | ✅ Complete |
+| Frontend Pages | ✅ Complete |
+| State Management | ✅ Complete |
+| Chat Integration | ✅ Complete |
+| Debug Panel | ✅ Complete |
 
 ---
 
-## 🚀 NEXT STEPS
-
-1. **Delete SessionHeader.tsx** (1 min)
-2. **Add DELETE /sessions endpoint** (5 min)
-3. **Add "Delete All" button** (10 min)
-4. **Test full flow** (30 min)
-   - Register → Login → Create sessions → Delete → Logout
-5. **Add session title auto-generation** (20 min)
-6. **Update message_count** (10 min)
-
-**Total time to 100%**: ~1.5 hours
-
----
-
-## 🎯 FINAL CHECKLIST
-
-### Must Have (For Production)
-- [ ] Delete SessionHeader.tsx
-- [ ] Add DELETE /sessions endpoint
-- [ ] Test authentication flow
-- [ ] Test session management
-- [ ] Add error boundaries
-- [ ] Add loading states
-- [ ] Test on mobile layout
-
-### Nice to Have
-- [ ] Session title auto-generation
-- [ ] Message count tracking
-- [ ] Archive sessions feature
-- [ ] Search sessions
-- [ ] Export conversation
-- [ ] Dark/Light theme toggle
-- [ ] Markdown support in messages
-
----
-
-## 📝 NOTES
-
-### Key Decisions Made
-1. **JWT over Session Cookies**: Easier for SPA, stateless backend
-2. **Zustand over Redux**: Simpler, less boilerplate
-3. **OpenAI-style Sidebar**: Familiar UX for users
-4. **Soft delete (is_archived)**: Preserve data, can restore
-
-### Performance Considerations
-1. **Session list limit**: Default 20 sessions
-2. **Message pagination**: Not implemented (load all)
-3. **Token expiry**: 24 hours (configurable)
-4. **DB indexes**: Added on user_id, last_active_at
-
-### Security Considerations
-1. **Password hashing**: bcrypt with cost 12
-2. **JWT secret**: Must be strong, keep in .env
-3. **Ownership checks**: All session operations validated
-4. **CORS**: Configured for localhost:5173
-
----
-
-**Last Updated**: 2026-01-28 21:45  
-**Status**: ✅ Backend Complete | ✅ Frontend 95% | 🔧 Minor fixes needed
+**Last Updated**: 2026-01-28 22:50

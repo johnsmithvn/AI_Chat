@@ -67,8 +67,13 @@ def get_or_create_user(db: Session, user_id: UUID, name: str) -> models.User:
     """Get existing user or create new one (backward compat)"""
     user = get_user(db, user_id)
     if not user:
+        # Check if email already exists (for backward compat users)
+        temp_email = f"{user_id}@temp.com"
+        existing = get_user_by_email(db, temp_email)
+        if existing:
+            return existing
         # Create with dummy email for backward compat
-        user = create_user(db, f"{user_id}@temp.com", "temp", name)
+        user = create_user(db, temp_email, "temp", name)
     return user
 
 

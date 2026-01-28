@@ -1,435 +1,493 @@
-# 📡 API REFERENCE - Backend
+# API Reference
 
-**Base URL**: `http://localhost:3000`  
-**Format**: JSON  
-**Version**: 1.0.0
+Complete API documentation for AI Chat v2 Backend.
 
----
-
-## 📋 ENDPOINTS OVERVIEW
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Health check |
-| GET | `/health` | Detailed health |
-| POST | `/chat` | Send message |
-| GET | `/chat/history/{session_id}` | Get history |
-| POST | `/session` | Create session |
-| GET | `/session/{session_id}` | Get session |
-| GET | `/sessions` | List sessions |
-| DELETE | `/session/{session_id}` | Delete session |
-| GET | `/debug/metadata/{message_id}` | Get raw metadata |
-| GET | `/debug/events/{session_id}` | Get events |
+**Base URL:** `http://localhost:3000/api`
 
 ---
 
-## 1. GET `/` - Health Check
+## Table of Contents
 
-Simple health check.
+- [Authentication](#authentication)
+- [Sessions](#sessions)
+- [Chat](#chat)
+- [Health Check](#health-check)
+- [Debug](#debug)
 
-### Response
+---
 
+## Authentication
+
+### Register User
+
+Create a new user account.
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+```
+
+**Request Body:**
 ```json
 {
-  "status": "ok",
-  "timestamp": "2026-01-26T10:00:00Z",
-  "service": "backend"
+  "email": "user@example.com",
+  "password": "your_password",
+  "name": "John Doe"
 }
 ```
 
-### Example
-
-```bash
-curl http://localhost:3000/
-```
-
----
-
-## 2. POST `/chat` - Send Message
-
-Gửi tin nhắn và nhận phản hồi từ AI Core.
-
-### Request
-
+**Response (201 Created):**
 ```json
 {
-  "message": "Explain async/await in Python",
-  "session_id": "optional-uuid"
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "created_at": "2025-01-28T10:00:00Z"
+  },
+  "message": "Registration successful"
 }
 ```
 
-**Fields**:
-- `message` (string, required): User message
-- `session_id` (string, optional): Session ID. Nếu null → tạo session mới
+**Errors:**
+- `400` - Email already registered
+- `422` - Validation error (invalid email format, password too short)
 
-### Response
+---
 
+### Login
+
+Authenticate user and get access token.
+
+```http
+POST /api/auth/login
+Content-Type: application/x-www-form-urlencoded
+```
+
+**Request Body:**
+```
+username=user@example.com&password=your_password
+```
+
+**Response (200 OK):**
 ```json
 {
-  "session_id": "4b8af747-4357-44f3-9473-ebf69a1bf269",
-  "response": "Async/await là syntax để viết asynchronous code...",
-  "metadata": {
-    "persona": "Technical",
-    "context": {
-      "context_type": "technical_question",
-      "confidence": 0.85,
-      "should_refuse": false
-    },
-    "model": "gpt-3.5-turbo",
-    "usage": {
-      "prompt_tokens": 120,
-      "completion_tokens": 250
-    },
-    "valid": true,
-    "warnings": []
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+**Errors:**
+- `401` - Invalid credentials
+
+---
+
+### Get Current User
+
+Get the authenticated user's profile.
+
+```http
+GET /api/auth/me
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "created_at": "2025-01-28T10:00:00Z"
   }
 }
 ```
 
-### Examples
-
-**curl**:
-```bash
-# First message (creates new session)
-curl -X POST http://localhost:3000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Hello AI!"}'
-
-# Subsequent message (use session_id from previous response)
-curl -X POST http://localhost:3000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Tell me more", "session_id": "4b8af747-4357-44f3-9473-ebf69a1bf269"}'
-```
-
-**JavaScript**:
-```javascript
-const response = await fetch('http://localhost:3000/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ message: 'Hello AI!' })
-});
-
-const data = await response.json();
-console.log('AI:', data.response);
-console.log('Persona:', data.metadata.persona);
-```
-
-**Python**:
-```python
-import httpx
-
-async with httpx.AsyncClient() as client:
-    response = await client.post(
-        'http://localhost:3000/chat',
-        json={'message': 'Hello AI!'}
-    )
-    data = response.json()
-    print(f"AI: {data['response']}")
-    print(f"Persona: {data['metadata']['persona']}")
-```
-
-### Status Codes
-
-- `200` - Success
-- `404` - Session not found
-- `500` - Internal error
-- `503` - AI Core unavailable
+**Errors:**
+- `401` - Not authenticated or token expired
 
 ---
 
-## 3. GET `/chat/history/{session_id}` - Get History
+### Logout
 
-Lấy conversation history của session.
+Invalidate the current session.
 
-### Parameters
+```http
+POST /api/auth/logout
+Authorization: Bearer <access_token>
+```
 
-- `session_id` (path, required): UUID của session
-
-### Response
-
+**Response (200 OK):**
 ```json
 {
-  "session_id": "4b8af747-4357-44f3-9473-ebf69a1bf269",
-  "messages": [
+  "success": true,
+  "message": "Logged out successfully"
+}
+```
+
+---
+
+## Sessions
+
+### Create Session
+
+Create a new chat session.
+
+```http
+POST /api/sessions/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "title": "My Chat Session"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "title": "My Chat Session",
+    "user_id": "uuid",
+    "created_at": "2025-01-28T10:00:00Z",
+    "updated_at": "2025-01-28T10:00:00Z"
+  }
+}
+```
+
+---
+
+### List Sessions
+
+Get all sessions for the current user.
+
+```http
+GET /api/sessions/
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `skip` | int | 0 | Number of sessions to skip |
+| `limit` | int | 100 | Maximum sessions to return |
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
     {
-      "id": "msg-uuid-1",
-      "session_id": "4b8af747-4357-44f3-9473-ebf69a1bf269",
+      "id": "uuid",
+      "title": "Session 1",
+      "user_id": "uuid",
+      "created_at": "2025-01-28T10:00:00Z",
+      "updated_at": "2025-01-28T10:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### Get Session
+
+Get a specific session by ID.
+
+```http
+GET /api/sessions/{session_id}
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "title": "Session Title",
+    "user_id": "uuid",
+    "created_at": "2025-01-28T10:00:00Z",
+    "updated_at": "2025-01-28T10:00:00Z"
+  }
+}
+```
+
+**Errors:**
+- `404` - Session not found
+
+---
+
+### Update Session
+
+Update session details.
+
+```http
+PUT /api/sessions/{session_id}
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "title": "Updated Title"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "title": "Updated Title",
+    "user_id": "uuid",
+    "created_at": "2025-01-28T10:00:00Z",
+    "updated_at": "2025-01-28T11:00:00Z"
+  }
+}
+```
+
+---
+
+### Delete Session
+
+Delete a session and all its messages.
+
+```http
+DELETE /api/sessions/{session_id}
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Session deleted successfully"
+}
+```
+
+---
+
+## Chat
+
+### Send Message
+
+Send a message to the AI and receive a response.
+
+```http
+POST /api/chat/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "content": "Hello, how are you?",
+  "session_id": "uuid",
+  "model_name": "gpt-4"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "content": "I'm doing well, thank you for asking! How can I help you today?",
+    "role": "assistant",
+    "session_id": "uuid",
+    "model_name": "gpt-4",
+    "created_at": "2025-01-28T10:00:00Z"
+  }
+}
+```
+
+---
+
+### Get Session Messages
+
+Get all messages in a session.
+
+```http
+GET /api/chat/history/{session_id}
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `skip` | int | 0 | Number of messages to skip |
+| `limit` | int | 100 | Maximum messages to return |
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "content": "Hello",
       "role": "user",
-      "content": "Hello AI!",
-      "created_at": "2026-01-26T10:00:00Z"
+      "session_id": "uuid",
+      "model_name": "gpt-4",
+      "created_at": "2025-01-28T10:00:00Z"
     },
     {
-      "id": "msg-uuid-2",
-      "session_id": "4b8af747-4357-44f3-9473-ebf69a1bf269",
+      "id": "uuid",
+      "content": "Hi there! How can I help?",
       "role": "assistant",
-      "content": "Hi there!",
-      "persona": "Casual",
-      "context_type": "casual_chat",
-      "confidence": 0.7,
-      "model_name": "gpt-3.5-turbo",
-      "prompt_tokens": 50,
-      "completion_tokens": 20,
-      "created_at": "2026-01-26T10:00:01Z"
+      "session_id": "uuid",
+      "model_name": "gpt-4",
+      "created_at": "2025-01-28T10:00:01Z"
     }
   ]
 }
 ```
 
-### Examples
-
-```bash
-curl http://localhost:3000/chat/history/4b8af747-4357-44f3-9473-ebf69a1bf269
-```
-
-### Status Codes
-
-- `200` - Success
-- `404` - Session not found
-
 ---
 
-## 4. POST `/session` - Create Session
+### Delete Message
 
-Tạo session mới.
+Delete a specific message.
 
-### Response
+```http
+DELETE /api/chat/{message_id}
+Authorization: Bearer <access_token>
+```
 
+**Response (200 OK):**
 ```json
 {
-  "id": "new-session-uuid",
-  "user_id": "default-user-uuid",
-  "ai_session_id": "ai-session-uuid",
-  "title": null,
-  "created_at": "2026-01-26T10:00:00Z",
-  "last_active_at": "2026-01-26T10:00:00Z"
+  "success": true,
+  "message": "Message deleted successfully"
 }
 ```
 
-### Examples
-
-```bash
-curl -X POST http://localhost:3000/session
-```
-
 ---
 
-## 5. GET `/session/{session_id}` - Get Session
+## Health Check
 
-Lấy thông tin session.
+### Health Status
 
-### Response
+Check if the API server is running.
 
+```http
+GET /api/health
+```
+
+**Response (200 OK):**
 ```json
 {
-  "id": "session-uuid",
-  "user_id": "user-uuid",
-  "ai_session_id": "ai-session-uuid",
-  "title": "Chat about Python",
-  "created_at": "2026-01-26T10:00:00Z",
-  "last_active_at": "2026-01-26T10:30:00Z"
+  "status": "healthy",
+  "timestamp": "2025-01-28T10:00:00Z"
 }
 ```
 
-### Examples
-
-```bash
-curl http://localhost:3000/session/session-uuid
-```
-
 ---
 
-## 6. GET `/sessions` - List Sessions
+### Database Health
 
-Lấy danh sách sessions của user.
+Check database connectivity.
 
-### Query Parameters
+```http
+GET /api/health/db
+```
 
-- `limit` (int, optional): Max số sessions. Default: 20
-
-### Response
-
+**Response (200 OK):**
 ```json
 {
-  "sessions": [
-    {
-      "id": "session-uuid-1",
-      "user_id": "user-uuid",
-      "ai_session_id": "ai-session-uuid-1",
-      "title": null,
-      "created_at": "2026-01-26T10:00:00Z",
-      "last_active_at": "2026-01-26T10:30:00Z"
-    }
-  ]
+  "status": "healthy",
+  "database": "connected"
 }
 ```
 
-### Examples
-
-```bash
-# Default (20 sessions)
-curl http://localhost:3000/sessions
-
-# Custom limit
-curl http://localhost:3000/sessions?limit=10
-```
-
 ---
 
-## 7. DELETE `/session/{session_id}` - Delete Session
+## Debug
 
-Xóa session và tất cả messages.
+> ⚠️ **Debug endpoints are for development only**
 
-### Response
+### Debug Info
 
-```json
-{
-  "status": "deleted",
-  "session_id": "session-uuid"
-}
+Get debug information about the current request.
+
+```http
+GET /api/debug
+Authorization: Bearer <access_token> (optional)
 ```
 
-### Examples
-
-```bash
-curl -X DELETE http://localhost:3000/session/session-uuid
-```
-
----
-
-## 8. GET `/debug/metadata/{message_id}` - Debug Metadata
-
-Lấy raw metadata của message (để debug AI).
-
-### Response
-
+**Response (200 OK):**
 ```json
 {
-  "id": "message-uuid",
-  "session_id": "session-uuid",
-  "role": "assistant",
-  "content": "AI response...",
-  "metadata": {
-    "persona": "Technical",
-    "context_type": "technical_question",
-    "confidence": 0.85,
-    "model_name": "gpt-3.5-turbo",
-    "prompt_tokens": 120,
-    "completion_tokens": 250
+  "request_id": "uuid",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com"
   },
-  "created_at": "2026-01-26T10:00:01Z"
-}
-```
-
-### Examples
-
-```bash
-curl http://localhost:3000/debug/metadata/message-uuid
-```
-
----
-
-## 9. GET `/debug/events/{session_id}` - Debug Events
-
-Lấy events của session (persona switches, warnings).
-
-### Response
-
-```json
-{
-  "session_id": "session-uuid",
-  "events": [
-    {
-      "id": "event-uuid",
-      "type": "persona_switch",
-      "payload": {
-        "from": "Casual",
-        "to": "Technical"
-      },
-      "created_at": "2026-01-26T10:00:01Z"
-    }
-  ]
-}
-```
-
-### Examples
-
-```bash
-curl http://localhost:3000/debug/events/session-uuid
-```
-
----
-
-## ⚠️ ERROR RESPONSES
-
-Tất cả errors theo format:
-
-```json
-{
-  "detail": "Error message here"
-}
-```
-
-### Common Errors
-
-#### 404 - Not Found
-
-```json
-{
-  "detail": "Session 4b8af747-4357-44f3-9473-ebf69a1bf269 not found"
-}
-```
-
-#### 503 - AI Core Unavailable
-
-```json
-{
-  "detail": "Cannot connect to AI Core - is it running?"
-}
-```
-
-```json
-{
-  "detail": "AI Core timeout - please try again"
-}
-```
-
-#### 500 - Internal Error
-
-```json
-{
-  "detail": "Internal error: Database connection failed"
+  "timestamp": "2025-01-28T10:00:00Z"
 }
 ```
 
 ---
 
-## 🔐 AUTHENTICATION
+## Error Response Format
 
-**Hiện tại**: Không có authentication (development mode)
+All error responses follow this format:
 
-**Production**: Nên thêm:
-- JWT tokens
-- API key authentication
-- Rate limiting
-- IP whitelisting
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable error message"
+  }
+}
+```
+
+### Common Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `UNAUTHORIZED` | 401 | Missing or invalid authentication |
+| `FORBIDDEN` | 403 | Insufficient permissions |
+| `NOT_FOUND` | 404 | Resource not found |
+| `VALIDATION_ERROR` | 422 | Request body validation failed |
+| `INTERNAL_ERROR` | 500 | Server error |
 
 ---
 
-## 🧪 TESTING
+## Authentication Header
 
-### Interactive API Docs
+All protected endpoints require the `Authorization` header:
 
-FastAPI tự động generate API docs tại:
-
-```
-http://localhost:3000/docs
+```http
+Authorization: Bearer <access_token>
 ```
 
-### Postman Collection
-
-Import collection từ file `postman_collection.json` (nếu có).
+The token is obtained from the `/api/auth/login` endpoint and has a default expiration of 30 minutes.
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: 2026-01-26
+## Rate Limiting
+
+Currently, no rate limiting is implemented. This will be added in a future version.
+
+---
+
+## CORS
+
+CORS is enabled for development:
+- Allowed origins: `http://localhost:5173`
+- Allowed methods: `GET, POST, PUT, DELETE, OPTIONS`
+- Allowed headers: `Authorization, Content-Type`

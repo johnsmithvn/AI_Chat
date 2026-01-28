@@ -12,7 +12,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
+    """Hash password using bcrypt (truncate to 72 bytes max)"""
+    # bcrypt has a 72 byte limit - truncate safely at character boundary
+    password_utf8 = password.encode('utf-8')
+    if len(password_utf8) > 72:
+        # Truncate at byte 72, then find last valid UTF-8 char boundary
+        truncated = password_utf8[:72]
+        # Decode with ignore to drop incomplete chars at the end
+        password = truncated.decode('utf-8', errors='ignore')
     return pwd_context.hash(password)
 
 
