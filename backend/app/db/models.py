@@ -11,29 +11,33 @@ from app.db.base import Base
 
 
 class User(Base):
-    """User model - Tối giản cho giai đoạn này"""
+    """User model with authentication"""
     __tablename__ = "users"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(Text, unique=True, nullable=False, index=True)
+    password_hash = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
+    avatar_url = Column(Text, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
+    last_login_at = Column(TIMESTAMP, nullable=True)
     
     # Relationships
     sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
 
 
 class ChatSession(Base):
-    """
-    Chat session - mapping 1-1 với AI Core session
-    """
+    """Chat session with message count and archive support"""
     __tablename__ = "chat_sessions"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     ai_session_id = Column(Text, unique=True, nullable=False)
     title = Column(Text, nullable=True)
+    message_count = Column(Integer, default=0)
+    is_archived = Column(Integer, default=0)  # 0=active, 1=archived
     created_at = Column(TIMESTAMP, server_default=func.now())
-    last_active_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    last_active_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), index=True)
     
     # Relationships
     user = relationship("User", back_populates="sessions")
