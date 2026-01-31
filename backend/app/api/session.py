@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.db.base import get_db
-from app.schemas.session import SessionResponse, SessionListResponse
+from app.schemas.session import SessionResponse, SessionListResponse, SessionUpdate
 from app.services.session_service import session_service
 from app.middlewares.auth import get_current_user
 from app.core.logging import get_logger
@@ -109,6 +109,36 @@ def delete_session(
     
     except Exception as e:
         logger.error("delete_session_error", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal error")
+
+
+@router.put("/{session_id}", response_model=SessionResponse)
+def update_session(
+    session_id: UUID,
+    request: SessionUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update session (rename)
+    """
+    try:
+        # Check ownership
+        if not crud.check_session_ownership(db, session_id, current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="Not authorized to update this session")
+        
+        updated_session = crud.update_session_title(db, session_id, request.title)
+        
+        if updated_session:
+            return updated_session
+        else:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+    except HTTPException:
+        raise
+    
+    except Exception as e:
+        logger.error("update_session_error", error=str(e))
         raise HTTPException(status_code=500, detail="Internal error")
 
 

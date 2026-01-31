@@ -73,4 +73,12 @@ export const chatApi = {
     const response = await api.delete<{ deleted: number }>("/sessions");
     return response.data;
   },
+
+  /**
+   * Rename session
+   */
+  renameSession: async (sessionId: string, title: string): Promise<SessionResponse> => {
+    const response = await api.put<SessionResponse>(`/session/${sessionId}`, { title });
+    return response.data;
+  },
 };

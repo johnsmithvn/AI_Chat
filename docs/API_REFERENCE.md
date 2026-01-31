@@ -227,10 +227,10 @@ Authorization: Bearer <access_token>
 
 ### Update Session
 
-Update session details.
+Rename a session (update session title).
 
 ```http
-PUT /api/sessions/{session_id}
+PUT /api/session/{session_id}
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
@@ -245,9 +245,18 @@ Content-Type: application/json
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "uuid",
+  "id": "uuid",
+  "user_id": "uuid",
+  "ai_session_id": "ai_session_xyz",
+  "title": "Updated Title",
+  "created_at": "2025-01-28T10:00:00Z",
+  "last_active_at": "2025-01-28T11:00:00Z"
+}
+```
+
+**Errors:**
+- `403` - Not authorized to update this session
+- `404` - Session not found
     "title": "Updated Title",
     "user_id": "uuid",
     "created_at": "2025-01-28T10:00:00Z",

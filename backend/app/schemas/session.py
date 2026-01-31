@@ -13,6 +13,11 @@ class SessionCreate(BaseModel):
     title: Optional[str] = Field(None, description="Session title")
 
 
+class SessionUpdate(BaseModel):
+    """Schema for updating a session"""
+    title: str = Field(..., min_length=1, max_length=255, description="New session title")
+
+
 class SessionResponse(BaseModel):
     """Session response schema"""
     id: UUID

@@ -1,6 +1,6 @@
 # 📋 AI Chat V2 - Code Structure
 
-**Complete codebase reference** - Updated 2026-01-28
+**Complete codebase reference** - Updated 2026-01-31
 
 ---
 
@@ -84,7 +84,7 @@ AI_Chat_2/
 │   │   │   │   └── DebugPanel.tsx        # AI metadata display
 │   │   │   │
 │   │   │   └── layout/
-│   │   │       ├── Sidebar.tsx           # Session list, new chat, delete all
+│   │   │       ├── Sidebar.tsx           # Session list, new chat, delete all, delete single (3-dot menu)
 │   │   │       ├── Sidebar.css
 │   │   │       ├── TopBar.tsx            # User menu, logout
 │   │   │       └── TopBar.css
@@ -126,21 +126,20 @@ AI_Chat_2/
 ├── docs/                             # Documentation
 │   ├── API_REFERENCE.md             # API documentation
 │   ├── DATABASE_SCHEMA.md           # Database schema
-│   └── CODEBASE_GUIDE.md            # Developer guide
+│   ├── CODEBASE_GUIDE.md            # Developer guide
+│   └── COMPLETED_TASKS.md           # Archived completed tasks
 │
 ├── docker-compose.yml               # PostgreSQL container
 ├── README.md                        # Project overview
 ├── CODESTRUCTURE.md                 # This file
-├── CHANGELOG.md                     # Version history
-├── TODO.md                          # V1 tasks
-└── TODO_V2.md                       # V2 tasks
+└── CHANGELOG.md                     # Version history
 ```
 
 ---
 
 ## 🔧 Backend Components
 
-### API Endpoints (14 total)
+### API Endpoints (15 total)
 
 | File | Method | Endpoint | Auth | Description |
 |------|--------|----------|------|-------------|
@@ -155,6 +154,7 @@ AI_Chat_2/
 | chat.py | GET | `/chat/history/{id}` | ✅ | Get history |
 | session.py | POST | `/session` | ✅ | Create session |
 | session.py | GET | `/session/{id}` | ✅ | Get session |
+| session.py | PUT | `/session/{id}` | ✅ | Rename session |
 | session.py | GET | `/sessions` | ✅ | List sessions |
 | session.py | DELETE | `/session/{id}` | ✅ | Delete session |
 | session.py | DELETE | `/sessions` | ✅ | Delete all |
@@ -183,7 +183,7 @@ AI_Chat_2/
 | Category | Functions |
 |----------|-----------|
 | User | create_user, get_user, get_user_by_email, update_user, update_user_last_login |
-| Session | create_session, get_session, get_session_by_ai_id, list_user_sessions, update_session, delete_session, delete_all_user_sessions |
+| Session | create_session, get_session, get_session_by_ai_id, list_user_sessions, update_session_title, delete_session, delete_all_user_sessions |
 | Message | create_message, get_messages_by_session, get_message |
 | Event | create_event, get_events_by_session |
 
@@ -199,11 +199,13 @@ AI_Chat_2/
 | RegisterPage | `/register` | Registration form |
 | ChatPage | `/` | Main chat (protected) |
 
-### Components (9)
+### Components (11)
 
 | Category | Component | Description |
 |----------|-----------|-------------|
 | auth | ProtectedRoute | Route guard, redirects to login |
+| common | ConfirmDialog | Reusable confirmation popup |
+| common | InputDialog | Reusable input popup for rename |
 | layout | Sidebar | Session list, new chat button |
 | layout | TopBar | User menu, logout button |
 | chat | ChatWindow | Main chat container |
@@ -243,6 +245,7 @@ Actions: sendMessage(), createSession(), loadHistory(), loadSessions(),
 - deleteSession(sessionId)
 - listSessions()
 - deleteAllSessions()
+- renameSession(sessionId, title)
 
 ---
 
@@ -363,4 +366,4 @@ Actions: sendMessage(), createSession(), loadHistory(), loadSessions(),
 
 ---
 
-**Last Updated**: 2026-01-28 22:50
+**Last Updated**: 2026-01-31

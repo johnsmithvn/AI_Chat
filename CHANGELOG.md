@@ -4,6 +4,68 @@ All notable changes to AI Chat 2 project will be documented in this file.
 
 ---
 
+## [1.0.3] - 2026-01-31
+
+### Added
+
+#### Frontend
+- **ConfirmDialog Component**: Reusable confirmation popup component
+  - Supports `default` and `danger` variants
+  - Keyboard support (Escape to close)
+  - Click outside to dismiss
+  - Files: `web/src/components/common/ConfirmDialog.tsx`, `ConfirmDialog.css`
+
+- **InputDialog Component**: Reusable input popup component for rename, etc.
+  - Auto-focus input field
+  - Enter key to submit
+  - File: `web/src/components/common/InputDialog.tsx`
+
+- **Rename Session Feature**: Users can rename conversations
+  - Added "Rename" option in session dropdown menu
+  - New InputDialog for entering new name
+  - Updates session title in database
+  - Files changed: `Sidebar.tsx`, `chat.store.ts`, `chat.api.ts`
+
+#### Backend
+- **PUT /session/{session_id}**: New endpoint to update session title
+  - Validates ownership before update
+  - File: `backend/app/api/session.py`
+- **SessionUpdate Schema**: Pydantic schema for session update
+  - File: `backend/app/schemas/session.py`
+- **update_session_title()**: CRUD function for updating session title
+  - File: `backend/app/db/crud.py`
+
+### Changed
+- **Replaced browser confirm()**: All native `confirm()` dialogs replaced with ConfirmDialog component
+  - Delete single session
+  - Delete all sessions
+  - Better UX with styled dialogs
+
+---
+
+## [1.0.2] - 2026-01-31
+
+### Added
+
+#### Frontend
+- **Session Dropdown Menu**: Added 3-dot menu icon on each session for individual actions
+  - Hover over session to show ⋮ (vertical ellipsis) icon
+  - Click to open dropdown menu with "Delete" option
+  - Click outside to close dropdown
+  - Files changed: `web/src/components/layout/Sidebar.tsx`, `web/src/components/layout/Sidebar.css`
+
+### Changed
+- **Session Delete UX**: Replaced inline `×` button with dropdown menu
+  - More consistent with modern chat interfaces (like OpenAI)
+  - Expandable for future actions (rename, archive, etc.)
+
+- **Documentation Cleanup**: Consolidated and cleaned up documentation files
+  - Removed duplicate `docs/STRUCTURE.md` (content in `CODESTRUCTURE.md`)
+  - Archived `TODO.md` and `TODO_V2.md` into `docs/COMPLETED_TASKS.md`
+  - Updated `CODESTRUCTURE.md` with latest file structure
+
+---
+
 ## [1.0.1] - 2026-01-27
 
 ### Fixed

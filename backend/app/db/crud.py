@@ -145,6 +145,17 @@ def check_session_ownership(db: Session, session_id: UUID, user_id: UUID) -> boo
     return session is not None
 
 
+def update_session_title(db: Session, session_id: UUID, title: str) -> Optional[models.ChatSession]:
+    """Update session title"""
+    db_session = get_session(db, session_id)
+    if db_session:
+        db_session.title = title
+        db.commit()
+        db.refresh(db_session)
+        return db_session
+    return None
+
+
 # ============ MESSAGE CRUD ============
 
 def create_message(db: Session, session_id: UUID, message_data: MessageCreate) -> models.Message:

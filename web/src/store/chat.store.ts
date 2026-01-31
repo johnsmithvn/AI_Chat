@@ -18,6 +18,7 @@ interface ChatStore extends ChatState {
   selectSession: (sessionId: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   deleteAllSessions: () => Promise<void>;
+  renameSession: (sessionId: string, title: string) => Promise<void>;
   clearSession: () => void;
   setError: (error: string | null) => void;
 }
@@ -161,6 +162,22 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     } catch (error: unknown) {
       console.error("Delete all sessions error:", error);
       set({ error: "Failed to delete all sessions" });
+    }
+  },
+
+  renameSession: async (sessionId: string, title: string) => {
+    try {
+      await chatApi.renameSession(sessionId, title);
+      
+      // Update session in list
+      set((state) => ({
+        sessions: state.sessions.map((s) =>
+          s.id === sessionId ? { ...s, title } : s
+        ),
+      }));
+    } catch (error: unknown) {
+      console.error("Rename session error:", error);
+      set({ error: "Failed to rename session" });
     }
   },
 
