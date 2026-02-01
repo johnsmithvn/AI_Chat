@@ -33,10 +33,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
   const isUser = message.role === "user";
   const [isMistake, setIsMistake] = useState(message.is_mistake || false);
   const [isMarking, setIsMarking] = useState(false);
+  const [showRaw, setShowRaw] = useState(false);
   const { retryMessage, loading } = useChatStore();
   
   const isError = message.isError;
   const isEmpty = !message.content && !isError;
+  
+  // Debug: log content length
+  console.log(`[MessageBubble] role=${message.role}, content length=${message.content?.length || 0}`);
 
   const handleToggleMistake = async () => {
     setIsMarking(true);
@@ -152,6 +156,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
             <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {message.content}
             </span>
+          ) : showRaw ? (
+            // Show raw content for debugging
+            <pre style={{ 
+              whiteSpace: "pre-wrap", 
+              wordBreak: "break-word",
+              fontSize: "0.8rem",
+              backgroundColor: "#1f2937",
+              color: "#10b981",
+              padding: "1rem",
+              borderRadius: "0.5rem",
+              maxHeight: "400px",
+              overflow: "auto"
+            }}>
+              {message.content}
+            </pre>
           ) : (
             // AI messages: render Markdown
             <ReactMarkdown
@@ -302,9 +321,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
               paddingTop: "0.5rem",
               borderTop: message.persona ? "none" : "1px solid #e5e7eb",
               display: "flex",
-              justifyContent: "flex-end",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
+            <button
+              onClick={() => setShowRaw(!showRaw)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "0.75rem",
+                color: showRaw ? "#3b82f6" : "#9ca3af",
+                padding: "0.25rem 0.5rem",
+              }}
+              title="Toggle raw content"
+            >
+              {showRaw ? "📝 Markdown" : "📄 Raw"} ({message.content?.length || 0} chars)
+            </button>
             <button
               onClick={handleToggleMistake}
               disabled={isMarking}
