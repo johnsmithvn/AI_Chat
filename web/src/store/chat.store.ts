@@ -12,12 +12,14 @@ interface ChatStore extends ChatState {
   
   // Actions
   sendMessage: (message: string) => Promise<void>;
+  retryMessage: (messageId: string) => Promise<void>;
   createSession: () => Promise<void>;
   loadHistory: (sessionId: string) => Promise<void>;
   loadSessions: () => Promise<void>;
   selectSession: (sessionId: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   deleteAllSessions: () => Promise<void>;
+  renameSession: (sessionId: string, title: string) => Promise<void>;
   clearSession: () => void;
   setError: (error: string | null) => void;
 }
@@ -46,8 +48,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         created_at: new Date().toISOString(),
       };
       
+      // Add placeholder assistant message
+      const placeholderId = Date.now().toString() + "_placeholder";
+      const placeholderMessage: Message = {
+        id: placeholderId,
+        session_id: sessionId || "",
+        role: "assistant",
+        content: "",
+        created_at: new Date().toISOString(),
+      };
+      
       set((state) => ({
-        messages: [...state.messages, userMessage],
+        messages: [...state.messages, userMessage, placeholderMessage],
       }));
 
       // Send to backend
@@ -58,37 +70,138 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         set({ sessionId: response.session_id });
       }
 
-      // Add assistant message
-      const assistantMessage: Message = {
-        id: Date.now().toString() + "1",
-        session_id: response.session_id,
-        role: "assistant",
-        content: response.response,
-        persona: response.metadata.persona || undefined,
-        context_type: response.metadata.context?.context_type || undefined,
-        confidence: response.metadata.context?.confidence || undefined,
-        model_name: response.metadata.model || undefined,
-        prompt_tokens: response.metadata.usage?.prompt_tokens || undefined,
-        completion_tokens: response.metadata.usage?.completion_tokens || undefined,
-        created_at: new Date().toISOString(),
-      };
-
+      // Update placeholder with real response
       set((state) => ({
-        messages: [...state.messages, assistantMessage],
+        messages: state.messages.map((m) =>
+          m.id === placeholderId
+            ? {
+                ...m,
+                id: Date.now().toString() + "1",
+                session_id: response.session_id,
+                content: response.response,
+                // v2.1: Use persona_used or fallback to legacy persona
+                persona: response.metadata.persona_used || response.metadata.persona || undefined,
+                tone: response.metadata.tone || undefined,
+                behavior: response.metadata.behavior || undefined,
+                // v2.1: context_type at top level, fallback to nested
+                context_type: response.metadata.context_type || response.metadata.context?.context_type || undefined,
+                // v2.1: signal_strength preferred, fallback to confidence
+                signal_strength: response.metadata.signal_strength || response.metadata.context?.signal_strength || undefined,
+                confidence: response.metadata.confidence || response.metadata.context?.confidence || undefined,
+                // v2.1: new fields
+                context_clarity: response.metadata.context_clarity ?? response.metadata.context?.context_clarity ?? undefined,
+                needs_knowledge: response.metadata.needs_knowledge ?? response.metadata.context?.needs_knowledge ?? undefined,
+                model_name: response.metadata.model || undefined,
+                prompt_tokens: response.metadata.usage?.prompt_tokens || undefined,
+                completion_tokens: response.metadata.usage?.completion_tokens || undefined,
+                isError: false,
+                errorMessage: undefined,
+              }
+            : m
+        ),
         currentMetadata: response.metadata,
         loading: false,
       }));
+      
+      // Reload sessions
+      get().loadSessions();
     } catch (error: unknown) {
       console.error("Send message error:", error);
-      let errorMessage = "Failed to send message";
+      let errorMsg = "Failed to send message";
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { detail?: string } } };
-        errorMessage = axiosError.response?.data?.detail || "Failed to send message";
+        errorMsg = axiosError.response?.data?.detail || "Failed to send message";
       }
-      set({
-        error: errorMessage,
+      
+      // Mark placeholder as error
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          m.id.endsWith("_placeholder")
+            ? { ...m, isError: true, errorMessage: errorMsg }
+            : m
+        ),
+        error: errorMsg,
         loading: false,
-      });
+      }));
+    }
+  },
+
+  retryMessage: async (messageId: string) => {
+    const { messages, sessionId } = get();
+    
+    // Find the error message and the user message before it
+    const errorIndex = messages.findIndex((m) => m.id === messageId);
+    if (errorIndex === -1) return;
+    
+    // Find the last user message before this error
+    let userMessage: Message | null = null;
+    for (let i = errorIndex - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        userMessage = messages[i];
+        break;
+      }
+    }
+    
+    if (!userMessage) return;
+
+    // Reset error state and set loading
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId
+          ? { ...m, isError: false, errorMessage: undefined, content: "" }
+          : m
+      ),
+      loading: true,
+      error: null,
+    }));
+
+    try {
+      const response = await chatApi.sendMessage(userMessage.content, sessionId || undefined);
+
+      // Update with real response
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                content: response.response,
+                // v2.1: Use persona_used or fallback to legacy persona
+                persona: response.metadata.persona_used || response.metadata.persona || undefined,
+                tone: response.metadata.tone || undefined,
+                behavior: response.metadata.behavior || undefined,
+                // v2.1: context_type at top level, fallback to nested
+                context_type: response.metadata.context_type || response.metadata.context?.context_type || undefined,
+                // v2.1: signal_strength preferred, fallback to confidence
+                confidence: response.metadata.signal_strength || response.metadata.confidence || response.metadata.context?.confidence || undefined,
+                model_name: response.metadata.model || undefined,
+                prompt_tokens: response.metadata.usage?.prompt_tokens || undefined,
+                completion_tokens: response.metadata.usage?.completion_tokens || undefined,
+                isError: false,
+                errorMessage: undefined,
+              }
+            : m
+        ),
+        currentMetadata: response.metadata,
+        loading: false,
+      }));
+
+    } catch (error: unknown) {
+      console.error("Retry message error:", error);
+      let errorMsg = "Failed to send message";
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { detail?: string } } };
+        errorMsg = axiosError.response?.data?.detail || "Failed to send message";
+      }
+      
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          m.id === messageId
+            ? { ...m, isError: true, errorMessage: errorMsg }
+            : m
+        ),
+        loading: false,
+        error: errorMsg,
+      }));
     }
   },
 
@@ -161,6 +274,22 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     } catch (error: unknown) {
       console.error("Delete all sessions error:", error);
       set({ error: "Failed to delete all sessions" });
+    }
+  },
+
+  renameSession: async (sessionId: string, title: string) => {
+    try {
+      await chatApi.renameSession(sessionId, title);
+      
+      // Update session in list
+      set((state) => ({
+        sessions: state.sessions.map((s) =>
+          s.id === sessionId ? { ...s, title } : s
+        ),
+      }));
+    } catch (error: unknown) {
+      console.error("Rename session error:", error);
+      set({ error: "Failed to rename session" });
     }
   },
 

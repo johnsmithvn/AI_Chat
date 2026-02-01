@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.db.base import get_db
-from app.schemas.session import SessionResponse, SessionListResponse
+from app.schemas.session import SessionResponse, SessionListResponse, SessionUpdate
+from app.schemas.replay import SessionReplayResponse, ReplayMessage
 from app.services.session_service import session_service
 from app.middlewares.auth import get_current_user
 from app.core.logging import get_logger
@@ -112,7 +113,108 @@ def delete_session(
         raise HTTPException(status_code=500, detail="Internal error")
 
 
-@router.delete("")
+@router.put("/{session_id}", response_model=SessionResponse)
+def update_session(
+    session_id: UUID,
+    request: SessionUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update session (rename)
+    """
+    try:
+        # Check ownership
+        if not crud.check_session_ownership(db, session_id, current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="Not authorized to update this session")
+        
+        updated_session = crud.update_session_title(db, session_id, request.title)
+        
+        if updated_session:
+            return updated_session
+        else:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+    except HTTPException:
+        raise
+    
+    except Exception as e:
+        logger.error("update_session_error", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal error")
+
+
+@router.get("/{session_id}/replay", response_model=SessionReplayResponse)
+def get_session_replay(
+    session_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get session replay data with timing information
+    """
+    try:
+        # Check ownership
+        if not crud.check_session_ownership(db, session_id, current_user["user_id"]):
+            raise HTTPException(status_code=403, detail="Not authorized to access this session")
+        
+        session = crud.get_session(db, session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        messages = crud.get_session_messages(db, session_id)
+        
+        if not messages:
+            return SessionReplayResponse(
+                session_id=session_id,
+                title=session.title,
+                messages=[],
+                total_duration_ms=0,
+                message_count=0
+            )
+        
+        # Calculate delays between messages
+        replay_messages = []
+        prev_time = messages[0].created_at
+        total_duration = 0
+        
+        for msg in messages:
+            delay_ms = int((msg.created_at - prev_time).total_seconds() * 1000)
+            # Cap delay at 10 seconds for replay (real delays can be very long)
+            delay_ms = min(delay_ms, 10000)
+            total_duration += delay_ms
+            
+            replay_messages.append(ReplayMessage(
+                id=msg.id,
+                role=msg.role,
+                content=msg.content,
+                persona=msg.persona,
+                context_type=msg.context_type,
+                confidence=msg.confidence,
+                model_name=msg.model_name,
+                prompt_tokens=msg.prompt_tokens,
+                completion_tokens=msg.completion_tokens,
+                created_at=msg.created_at,
+                delay_ms=delay_ms
+            ))
+            
+            prev_time = msg.created_at
+        
+        return SessionReplayResponse(
+            session_id=session_id,
+            title=session.title,
+            messages=replay_messages,
+            total_duration_ms=total_duration,
+            message_count=len(replay_messages)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("get_session_replay_error", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to get session replay")
+
+
+@router.delete("s")
 def delete_all_sessions(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)

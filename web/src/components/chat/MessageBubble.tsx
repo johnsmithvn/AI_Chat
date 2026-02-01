@@ -1,19 +1,37 @@
 /**
  * Message Bubble - Single message display with Markdown rendering
  */
-import React from "react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { Message } from "../../types/chat";
+import { chatApi } from "../../services/chat.api";
+import { useChatStore } from "../../store/chat.store";
 import "./MessageBubble.css";
 
 interface MessageBubbleProps {
   message: Message;
+  onMistakeToggle?: (messageId: string, isMistake: boolean) => void;
 }
 
-const getPersonaColor = (persona?: string) => {
+const getPersonaColor = (persona?: string, tone?: string, behavior?: string) => {
+  // v2.0: Ưu tiên tone+behavior
+  if (tone || behavior) {
+    // Behavior cautious luôn có màu warning
+    if (behavior?.toLowerCase() === "cautious") {
+      return "#f59e0b";
+    }
+    // Tone-based color
+    switch (tone?.toLowerCase()) {
+      case "casual":
+        return "#10b981";
+      case "technical":
+        return "#3b82f6";
+    }
+  }
+  // Legacy persona support
   switch (persona?.toLowerCase()) {
     case "casual":
       return "#10b981";
@@ -26,8 +44,107 @@ const getPersonaColor = (persona?: string) => {
   }
 };
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistakeToggle }) => {
   const isUser = message.role === "user";
+  const [isMistake, setIsMistake] = useState(message.is_mistake || false);
+  const [isMarking, setIsMarking] = useState(false);
+  const [showRaw, setShowRaw] = useState(false);
+  const { retryMessage, loading } = useChatStore();
+  
+  const isError = message.isError;
+  const isEmpty = !message.content && !isError;
+  
+  // Debug: log content length
+  console.log(`[MessageBubble] role=${message.role}, content length=${message.content?.length || 0}`);
+
+  const handleToggleMistake = async () => {
+    setIsMarking(true);
+    try {
+      const newState = !isMistake;
+      await chatApi.markMistake(message.id, newState);
+      setIsMistake(newState);
+      onMistakeToggle?.(message.id, newState);
+    } catch (error) {
+      console.error('Failed to toggle mistake:', error);
+    } finally {
+      setIsMarking(false);
+    }
+  };
+
+  const handleRetry = () => {
+    if (!loading) {
+      retryMessage(message.id);
+    }
+  };
+
+  // Show loading dots for empty assistant message (not error)
+  if (isEmpty && !isUser) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          marginBottom: "1rem",
+        }}
+      >
+        <div
+          className="message-bubble assistant loading-bubble"
+          style={{
+            maxWidth: "70%",
+            padding: "0.75rem 1rem",
+            borderRadius: "0.75rem",
+            backgroundColor: "#f3f4f6",
+            color: "#1f2937",
+          }}
+        >
+          <div className="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (isError && !isUser) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          marginBottom: "1rem",
+        }}
+      >
+        <div
+          className="message-bubble assistant error-bubble"
+          style={{
+            maxWidth: "70%",
+            padding: "0.75rem 1rem",
+            borderRadius: "0.75rem",
+            backgroundColor: "#fef2f2",
+            color: "#dc2626",
+            border: "1px solid #fca5a5",
+          }}
+        >
+          <div className="error-container">
+            <span className="error-icon">⚠️</span>
+            <span className="error-text">
+              {message.errorMessage || "Failed to get response"}
+            </span>
+          </div>
+          <button
+            className="btn-retry"
+            onClick={handleRetry}
+            disabled={loading}
+          >
+            🔄 {loading ? "Retrying..." : "Retry"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -38,13 +155,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       }}
     >
       <div
-        className={`message-bubble ${isUser ? "user" : "assistant"}`}
+        className={`message-bubble ${isUser ? "user" : "assistant"} ${isMistake ? "mistake" : ""}`}
         style={{
           maxWidth: "70%",
           padding: "0.75rem 1rem",
           borderRadius: "0.75rem",
-          backgroundColor: isUser ? "#3b82f6" : "#f3f4f6",
+          backgroundColor: isUser ? "#3b82f6" : isMistake ? "#fef2f2" : "#f3f4f6",
           color: isUser ? "white" : "#1f2937",
+          border: isMistake ? "2px solid #ef4444" : "none",
         }}
       >
         <div className="message-content">
@@ -53,13 +171,28 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {message.content}
             </span>
+          ) : showRaw ? (
+            // Show raw content for debugging
+            <pre style={{ 
+              whiteSpace: "pre-wrap", 
+              wordBreak: "break-word",
+              fontSize: "0.8rem",
+              backgroundColor: "#1f2937",
+              color: "#10b981",
+              padding: "1rem",
+              borderRadius: "0.5rem",
+              maxHeight: "400px",
+              overflow: "auto"
+            }}>
+              {message.content}
+            </pre>
           ) : (
             // AI messages: render Markdown
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
                 // Code blocks with syntax highlighting
-                code({ node, className, children, ...props }) {
+                code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || "");
                   const isInline = !match && !className;
                   
@@ -169,7 +302,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           )}
         </div>
 
-        {!isUser && message.persona && (
+        {/* Persona/Tone+Behavior display */}
+        {!isUser && (message.persona || message.tone) && (
           <div
             style={{
               marginTop: "0.5rem",
@@ -179,19 +313,99 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               color: "#6b7280",
               display: "flex",
               gap: "0.75rem",
+              flexWrap: "wrap",
             }}
           >
-            <span
-              style={{
-                color: getPersonaColor(message.persona),
-                fontWeight: "500",
-              }}
-            >
-              {message.persona}
-            </span>
-            {message.confidence !== undefined && (
-              <span>Confidence: {(message.confidence * 100).toFixed(0)}%</span>
+            {/* v2.1+: Show tone + behavior or persona_used */}
+            {message.tone ? (
+              <span
+                style={{
+                  color: getPersonaColor(undefined, message.tone, message.behavior),
+                  fontWeight: "500",
+                }}
+              >
+                {message.tone}
+                {message.behavior === "cautious" && " ⚠️"}
+              </span>
+            ) : message.persona?.includes("+") ? (
+              /* v2.1: persona_used like "Casual + Cautious" */
+              <span
+                style={{
+                  color: message.persona.toLowerCase().includes("cautious") ? "#f59e0b" : "#10b981",
+                  fontWeight: "500",
+                }}
+              >
+                {message.persona}
+              </span>
+            ) : (
+              /* Legacy: Show persona */
+              <span
+                style={{
+                  color: getPersonaColor(message.persona),
+                  fontWeight: "500",
+                }}
+              >
+                {message.persona}
+              </span>
             )}
+            {message.confidence !== undefined && message.confidence > 0 && (
+              <span>Signal: {((message.signal_strength ?? message.confidence) * 100).toFixed(0)}%</span>
+            )}
+            {message.context_clarity === false && (
+              <span style={{ color: "#f59e0b" }}>⚠️ Unclear context</span>
+            )}
+            {message.needs_knowledge && (
+              <span style={{ color: "#8b5cf6" }}>📚 Needs knowledge</span>
+            )}
+          </div>
+        )}
+
+        {/* Mistake toggle button for AI messages */}
+        {!isUser && (
+          <div
+            style={{
+              marginTop: "0.5rem",
+              paddingTop: "0.5rem",
+              borderTop: message.persona ? "none" : "1px solid #e5e7eb",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <button
+              onClick={() => setShowRaw(!showRaw)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "0.75rem",
+                color: showRaw ? "#3b82f6" : "#9ca3af",
+                padding: "0.25rem 0.5rem",
+              }}
+              title="Toggle raw content"
+            >
+              {showRaw ? "📝 Markdown" : "📄 Raw"} ({message.content?.length || 0} chars)
+            </button>
+            <button
+              onClick={handleToggleMistake}
+              disabled={isMarking}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: isMarking ? "wait" : "pointer",
+                fontSize: "0.75rem",
+                color: isMistake ? "#ef4444" : "#9ca3af",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+                padding: "0.25rem 0.5rem",
+                borderRadius: "0.25rem",
+                transition: "all 0.15s",
+              }}
+              title={isMistake ? "Unmark as mistake" : "Mark as AI mistake"}
+            >
+              {isMistake ? "⚠️ Marked as mistake" : "🚫 Mark mistake"}
+            </button>
           </div>
         )}
       </div>

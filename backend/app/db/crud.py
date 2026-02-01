@@ -145,6 +145,17 @@ def check_session_ownership(db: Session, session_id: UUID, user_id: UUID) -> boo
     return session is not None
 
 
+def update_session_title(db: Session, session_id: UUID, title: str) -> Optional[models.ChatSession]:
+    """Update session title"""
+    db_session = get_session(db, session_id)
+    if db_session:
+        db_session.title = title
+        db.commit()
+        db.refresh(db_session)
+        return db_session
+    return None
+
+
 # ============ MESSAGE CRUD ============
 
 def create_message(db: Session, session_id: UUID, message_data: MessageCreate) -> models.Message:
@@ -154,12 +165,19 @@ def create_message(db: Session, session_id: UUID, message_data: MessageCreate) -
         role=message_data.role,
         content=message_data.content,
         persona=message_data.persona,
+        tone=message_data.tone,
+        behavior=message_data.behavior,
         context_type=message_data.context_type,
         confidence=message_data.confidence,
+        signal_strength=message_data.signal_strength,
         model_name=message_data.model_name,
         prompt_tokens=message_data.prompt_tokens,
         completion_tokens=message_data.completion_tokens
     )
+    # Use property setters for bool -> int conversion
+    db_message.context_clarity = message_data.context_clarity
+    db_message.needs_knowledge = message_data.needs_knowledge
+    
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
@@ -196,3 +214,51 @@ def get_session_events(db: Session, session_id: UUID) -> List[models.Event]:
         .filter(models.Event.session_id == session_id)\
         .order_by(models.Event.created_at.asc())\
         .all()
+
+
+# ============ MESSAGE MISTAKE CRUD ============
+
+def get_message(db: Session, message_id: UUID) -> Optional[models.Message]:
+    """Get message by ID"""
+    return db.query(models.Message).filter(models.Message.id == message_id).first()
+
+
+def mark_message_mistake(
+    db: Session, 
+    message_id: UUID, 
+    is_mistake: bool = True, 
+    note: Optional[str] = None
+) -> Optional[models.Message]:
+    """Mark/unmark a message as mistake"""
+    message = get_message(db, message_id)
+    if message:
+        message.is_mistake = 1 if is_mistake else 0
+        message.mistake_note = note if is_mistake else None
+        db.commit()
+        db.refresh(message)
+        return message
+    return None
+
+
+def get_user_mistakes(db: Session, user_id: UUID, limit: int = 50) -> List[models.Message]:
+    """Get all messages marked as mistakes for a user"""
+    user_sessions = db.query(models.ChatSession.id).filter(
+        models.ChatSession.user_id == user_id
+    ).subquery()
+    
+    return db.query(models.Message)\
+        .filter(
+            models.Message.session_id.in_(user_sessions),
+            models.Message.is_mistake == 1
+        )\
+        .order_by(models.Message.created_at.desc())\
+        .limit(limit)\
+        .all()
+
+
+def check_message_ownership(db: Session, message_id: UUID, user_id: UUID) -> bool:
+    """Check if message belongs to user (via session)"""
+    message = get_message(db, message_id)
+    if not message:
+        return False
+    return check_session_ownership(db, message.session_id, user_id)

@@ -1,6 +1,6 @@
 # 📋 AI Chat V2 - Code Structure
 
-**Complete codebase reference** - Updated 2026-01-28
+**Complete codebase reference** - Updated 2026-01-31
 
 ---
 
@@ -19,7 +19,9 @@ AI_Chat_2/
 │   │   │   ├── auth.py              # POST /auth/register, /auth/login
 │   │   │   │                        # GET /auth/me, PUT /auth/me
 │   │   │   ├── chat.py              # POST /chat, GET /chat/history/{id}
-│   │   │   ├── session.py           # CRUD /session, /sessions
+│   │   │   ├── session.py           # CRUD /session, /sessions, /session/{id}/replay
+│   │   │   ├── analytics.py         # GET /analytics/tokens, POST /analytics/compare
+│   │   │   ├── message.py           # PUT /message/{id}/mistake, GET /message/mistakes
 │   │   │   ├── health.py            # GET /, /health
 │   │   │   └── debug.py             # GET /debug/message/{id}, /debug/session/{id}/events
 │   │   │
@@ -46,6 +48,8 @@ AI_Chat_2/
 │   │   │   ├── auth.py              # RegisterRequest, LoginRequest, TokenResponse, UserResponse
 │   │   │   ├── chat.py              # ChatRequest, ChatResponse, MessageCreate, MessageResponse
 │   │   │   ├── session.py           # SessionCreate, SessionResponse, SessionListResponse
+│   │   │   ├── analytics.py         # TokenStats, SessionCompareRequest/Response
+│   │   │   ├── replay.py            # ReplayMessage, SessionReplayResponse
 │   │   │   └── common.py            # MetadataSchema
 │   │   │
 │   │   └── services/                 # Business Logic
@@ -58,7 +62,8 @@ AI_Chat_2/
 │   │   ├── env.py
 │   │   ├── script.py.mako
 │   │   └── versions/
-│   │       └── 2026_01_28_*.py      # Auth & session features migration
+│   │       ├── 2026_01_28_*.py      # Auth & session features migration
+│   │       └── 2026_01_31_*.py      # Add is_mistake column migration
 │   │
 │   ├── alembic.ini                  # Alembic configuration
 │   ├── requirements.txt             # Python dependencies
@@ -80,13 +85,21 @@ AI_Chat_2/
 │   │   │   │   ├── ChatWindow.tsx        # Main chat container
 │   │   │   │   ├── ChatInput.tsx         # Message input with send button
 │   │   │   │   ├── MessageList.tsx       # Renders all messages
-│   │   │   │   ├── MessageBubble.tsx     # Single message with persona colors
+│   │   │   │   ├── MessageBubble.tsx     # Single message with persona colors + mistake marking
 │   │   │   │   └── DebugPanel.tsx        # AI metadata display
 │   │   │   │
+│   │   │   ├── analytics/
+│   │   │   │   ├── AnalyticsModal.tsx    # Token usage analytics (tabs: overview, by session, by day)
+│   │   │   │   ├── AnalyticsModal.css
+│   │   │   │   ├── CompareModal.tsx      # Compare 2 sessions side-by-side
+│   │   │   │   ├── CompareModal.css
+│   │   │   │   ├── ReplayModal.tsx       # Session replay with play/pause/speed controls
+│   │   │   │   └── ReplayModal.css
+│   │   │   │
 │   │   │   └── layout/
-│   │   │       ├── Sidebar.tsx           # Session list, new chat, delete all
+│   │   │       ├── Sidebar.tsx           # Session list, new chat, delete all, delete single, replay
 │   │   │       ├── Sidebar.css
-│   │   │       ├── TopBar.tsx            # User menu, logout
+│   │   │       ├── TopBar.tsx            # User menu, logout, analytics, compare buttons
 │   │   │       └── TopBar.css
 │   │   │
 │   │   ├── pages/
@@ -126,21 +139,20 @@ AI_Chat_2/
 ├── docs/                             # Documentation
 │   ├── API_REFERENCE.md             # API documentation
 │   ├── DATABASE_SCHEMA.md           # Database schema
-│   └── CODEBASE_GUIDE.md            # Developer guide
+│   ├── CODEBASE_GUIDE.md            # Developer guide
+│   └── COMPLETED_TASKS.md           # Archived completed tasks
 │
 ├── docker-compose.yml               # PostgreSQL container
 ├── README.md                        # Project overview
 ├── CODESTRUCTURE.md                 # This file
-├── CHANGELOG.md                     # Version history
-├── TODO.md                          # V1 tasks
-└── TODO_V2.md                       # V2 tasks
+└── CHANGELOG.md                     # Version history
 ```
 
 ---
 
 ## 🔧 Backend Components
 
-### API Endpoints (14 total)
+### API Endpoints (20 total)
 
 | File | Method | Endpoint | Auth | Description |
 |------|--------|----------|------|-------------|
@@ -155,9 +167,15 @@ AI_Chat_2/
 | chat.py | GET | `/chat/history/{id}` | ✅ | Get history |
 | session.py | POST | `/session` | ✅ | Create session |
 | session.py | GET | `/session/{id}` | ✅ | Get session |
+| session.py | PUT | `/session/{id}` | ✅ | Rename session |
+| session.py | GET | `/session/{id}/replay` | ✅ | Get session for replay |
 | session.py | GET | `/sessions` | ✅ | List sessions |
 | session.py | DELETE | `/session/{id}` | ✅ | Delete session |
 | session.py | DELETE | `/sessions` | ✅ | Delete all |
+| analytics.py | GET | `/analytics/tokens` | ✅ | Token usage analytics |
+| analytics.py | POST | `/analytics/compare` | ✅ | Compare 2 sessions |
+| message.py | PUT | `/message/{id}/mistake` | ✅ | Mark/unmark AI mistake |
+| message.py | GET | `/message/mistakes` | ✅ | List all marked mistakes |
 | debug.py | GET | `/debug/message/{id}` | ❌ | Get message metadata |
 | debug.py | GET | `/debug/session/{id}/events` | ❌ | Get session events |
 
@@ -167,7 +185,7 @@ AI_Chat_2/
 |-------|-------|------------|
 | User | users | id, email, password_hash, name |
 | ChatSession | chat_sessions | id, user_id, ai_session_id, title |
-| Message | messages | id, session_id, role, content, persona |
+| Message | messages | id, session_id, role, content, persona, is_mistake, mistake_note |
 | Event | events | id, session_id, type, payload |
 
 ### Services
@@ -183,8 +201,8 @@ AI_Chat_2/
 | Category | Functions |
 |----------|-----------|
 | User | create_user, get_user, get_user_by_email, update_user, update_user_last_login |
-| Session | create_session, get_session, get_session_by_ai_id, list_user_sessions, update_session, delete_session, delete_all_user_sessions |
-| Message | create_message, get_messages_by_session, get_message |
+| Session | create_session, get_session, get_session_by_ai_id, list_user_sessions, update_session_title, delete_session, delete_all_user_sessions |
+| Message | create_message, get_messages_by_session, get_message, mark_message_mistake, get_user_mistakes, check_message_ownership |
 | Event | create_event, get_events_by_session |
 
 ---
@@ -199,18 +217,23 @@ AI_Chat_2/
 | RegisterPage | `/register` | Registration form |
 | ChatPage | `/` | Main chat (protected) |
 
-### Components (9)
+### Components (17)
 
 | Category | Component | Description |
 |----------|-----------|-------------|
 | auth | ProtectedRoute | Route guard, redirects to login |
-| layout | Sidebar | Session list, new chat button |
-| layout | TopBar | User menu, logout button |
+| common | ConfirmDialog | Reusable confirmation popup |
+| common | InputDialog | Reusable input popup for rename |
+| layout | Sidebar | Session list, new chat, replay button |
+| layout | TopBar | User menu, logout, analytics, compare buttons |
 | chat | ChatWindow | Main chat container |
 | chat | ChatInput | Text input with send |
 | chat | MessageList | Renders messages |
-| chat | MessageBubble | Single message display |
+| chat | MessageBubble | Single message display + mistake marking + error retry |
 | chat | DebugPanel | AI metadata viewer |
+| analytics | AnalyticsModal | Token usage stats (overview, by session, by day) |
+| analytics | CompareModal | Compare 2 sessions side-by-side |
+| analytics | ReplayModal | Session replay with play/pause/speed controls |
 
 ### Stores (Zustand)
 
@@ -223,7 +246,7 @@ Actions: login(), register(), logout(), loadUser(), clearError()
 #### ChatStore (chat.store.ts)
 ```typescript
 State: { messages, sessions, currentSessionId, loading, error, currentMetadata }
-Actions: sendMessage(), createSession(), loadHistory(), loadSessions(), 
+Actions: sendMessage(), retryMessage(), createSession(), loadHistory(), loadSessions(), 
          selectSession(), deleteSession(), deleteAllSessions(), clearSession()
 ```
 
@@ -243,6 +266,12 @@ Actions: sendMessage(), createSession(), loadHistory(), loadSessions(),
 - deleteSession(sessionId)
 - listSessions()
 - deleteAllSessions()
+- renameSession(sessionId, title)
+- getTokenAnalytics()
+- compareSessions(sessionIds)
+- getSessionReplay(sessionId)
+- markMistake(messageId, isMistake, note)
+- getMistakes()
 
 ---
 
@@ -363,4 +392,4 @@ Actions: sendMessage(), createSession(), loadHistory(), loadSessions(),
 
 ---
 
-**Last Updated**: 2026-01-28 22:50
+**Last Updated**: 2026-01-31

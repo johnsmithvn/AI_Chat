@@ -102,22 +102,78 @@
   font-size: 0.9rem;
 }
 
-.btn-delete-session {
+/* Session Menu (3-dot dropdown) */
+.session-menu-container {
+  position: relative;
+}
+
+.btn-session-menu {
   background: none;
   border: none;
   color: #888;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   opacity: 0;
   transition: all 0.2s;
   line-height: 1;
+  border-radius: 0.25rem;
 }
 
-.session-item:hover .btn-delete-session {
+.btn-session-menu:hover {
+  background: #3a3b42;
+  color: white;
+}
+
+.session-item:hover .btn-session-menu {
   opacity: 1;
 }
 
-.btn-delete-session:hover {
+.btn-session-menu .dots {
+  display: inline-block;
+  font-weight: bold;
+}
+
+/* Dropdown Menu */
+.session-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #2a2b32;
+  border: 1px solid #444;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  min-width: 120px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: #3a3b42;
+  color: white;
+}
+
+.dropdown-item-delete:hover {
+  background: #ff444430;
   color: #ff6b6b;
+}
+
+.dropdown-icon {
+  font-size: 0.9rem;
 }

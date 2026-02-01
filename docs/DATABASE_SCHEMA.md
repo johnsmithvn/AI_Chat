@@ -129,16 +129,33 @@ class Session(Base):
 
 ### messages
 
-Stores individual chat messages.
+Stores individual chat messages with AI Core metadata.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | UUID | PK, DEFAULT uuid_generate_v4() | Unique identifier |
-| `content` | TEXT | NOT NULL | Message content |
-| `role` | VARCHAR(20) | NOT NULL | 'user' or 'assistant' |
-| `model_name` | VARCHAR(50) | NULLABLE | AI model used (e.g., 'gpt-4') |
 | `session_id` | UUID | FK → sessions.id, NOT NULL | Parent session |
-| `created_at` | TIMESTAMP WITH TIME ZONE | DEFAULT NOW() | Message timestamp |
+| `role` | TEXT | NOT NULL, CHECK IN ('user', 'assistant') | Message sender |
+| `content` | TEXT | NOT NULL | Message content |
+| `persona` | TEXT | NULLABLE | Legacy persona or persona_used |
+| `tone` | TEXT | NULLABLE | v2.0: casual, technical |
+| `behavior` | TEXT | NULLABLE | v2.0: normal, cautious |
+| `context_type` | TEXT | NULLABLE | Context classification |
+| `confidence` | FLOAT | NULLABLE, CHECK 0-1 | Legacy confidence score |
+| `signal_strength` | FLOAT | NULLABLE, CHECK 0-1 | v2.1: replaces confidence |
+| `context_clarity` | INTEGER | NULLABLE, CHECK IN (0,1) | v2.1: was context clear? |
+| `needs_knowledge` | INTEGER | DEFAULT 0, CHECK IN (0,1) | v2.1: needs RAG? |
+| `model_name` | TEXT | NULLABLE | AI model used (e.g., 'gpt-4') |
+| `prompt_tokens` | INTEGER | NULLABLE | Token usage (prompt) |
+| `completion_tokens` | INTEGER | NULLABLE | Token usage (completion) |
+| `is_mistake` | INTEGER | DEFAULT 0 | 0=normal, 1=marked as mistake |
+| `mistake_note` | TEXT | NULLABLE | Note about the mistake |
+| `created_at` | TIMESTAMP | DEFAULT NOW() | Message timestamp |
+
+**AI Core Version Support:**
+- v1.x: `persona`, `confidence`
+- v2.0: `tone`, `behavior` (replaces single persona)
+- v2.1: `signal_strength`, `context_clarity`, `needs_knowledge`
 
 **SQLAlchemy Model:**
 
@@ -147,13 +164,28 @@ class Message(Base):
     __tablename__ = "messages"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    content = Column(Text, nullable=False)
-    role = Column(String(20), nullable=False)  # 'user' or 'assistant'
-    model_name = Column(String(50), nullable=True)
     session_id = Column(UUID(as_uuid=True), ForeignKey("sessions.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    role = Column(Text, CheckConstraint("role IN ('user', 'assistant')"), nullable=False)
+    content = Column(Text, nullable=False)
     
-    session = relationship("Session", back_populates="messages")
+    # AI Metadata
+    persona = Column(Text, nullable=True)  # Legacy or persona_used
+    tone = Column(Text, nullable=True)  # v2.0
+    behavior = Column(Text, nullable=True)  # v2.0
+    context_type = Column(Text, nullable=True)
+    confidence = Column(Float, nullable=True)  # Legacy
+    signal_strength = Column(Float, nullable=True)  # v2.1
+    context_clarity = Column(Integer, nullable=True)  # v2.1: 0=false, 1=true
+    needs_knowledge = Column(Integer, default=0)  # v2.1: 0=false, 1=true
+    
+    model_name = Column(Text, nullable=True)
+    prompt_tokens = Column(Integer, nullable=True)
+    completion_tokens = Column(Integer, nullable=True)
+    is_mistake = Column(Integer, default=0)
+    mistake_note = Column(Text, nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    
+    session = relationship("ChatSession", back_populates="messages")
 ```
 
 ---
@@ -179,7 +211,10 @@ backend/migrations/
 ├── env.py                 # Migration environment config
 ├── script.py.mako         # Migration template
 └── versions/
-    └── 2026_01_28_2132-a6f3e1c568cf_add_auth_and_session_features.py
+    ├── 2026_01_28_2132-a6f3e1c568cf_add_auth_and_session_features.py
+    ├── 2026_01_31_1000-b7c4d2e8f9a1_add_is_mistake_column.py
+    ├── 2026_02_01_2116-a0c619e00a9e_add_tone_behavior_columns.py
+    └── 2026_02_01_2230-c8d5e3f7a2b4_add_signal_strength_columns.py
 ```
 
 ### Common Commands

@@ -11,6 +11,8 @@ Complete API documentation for AI Chat v2 Backend.
 - [Authentication](#authentication)
 - [Sessions](#sessions)
 - [Chat](#chat)
+- [Analytics](#analytics)
+- [Messages](#messages)
 - [Health Check](#health-check)
 - [Debug](#debug)
 
@@ -227,10 +229,10 @@ Authorization: Bearer <access_token>
 
 ### Update Session
 
-Update session details.
+Rename a session (update session title).
 
 ```http
-PUT /api/sessions/{session_id}
+PUT /api/session/{session_id}
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
@@ -245,9 +247,18 @@ Content-Type: application/json
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "uuid",
+  "id": "uuid",
+  "user_id": "uuid",
+  "ai_session_id": "ai_session_xyz",
+  "title": "Updated Title",
+  "created_at": "2025-01-28T10:00:00Z",
+  "last_active_at": "2025-01-28T11:00:00Z"
+}
+```
+
+**Errors:**
+- `403` - Not authorized to update this session
+- `404` - Session not found
     "title": "Updated Title",
     "user_id": "uuid",
     "created_at": "2025-01-28T10:00:00Z",
@@ -272,6 +283,258 @@ Authorization: Bearer <access_token>
 {
   "success": true,
   "message": "Session deleted successfully"
+}
+```
+
+---
+
+### Delete All Sessions
+
+Delete ALL sessions for the current user.
+
+```http
+DELETE /api/sessions
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "deleted": 5
+}
+```
+
+**Notes:**
+- Deletes all sessions and their messages for the authenticated user
+- Returns count of deleted sessions
+- This action cannot be undone
+
+---
+
+### Session Replay
+
+Get session replay data with timing information for playback.
+
+```http
+GET /api/session/{session_id}/replay
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "session_id": "uuid",
+  "title": "Session Title",
+  "messages": [
+    {
+      "id": "uuid",
+      "role": "user",
+      "content": "Hello",
+      "persona": null,
+      "tone": null,
+      "behavior": null,
+      "context_type": null,
+      "confidence": null,
+      "signal_strength": null,
+      "model_name": null,
+      "created_at": "2026-01-31T10:00:00Z",
+      "delay_ms": 0
+    },
+    {
+      "id": "uuid",
+      "role": "assistant",
+      "content": "Hi! How can I help?",
+      "persona": "Casual + Cautious",
+      "tone": "casual",
+      "behavior": "cautious",
+      "context_type": "casual",
+      "confidence": 0.95,
+      "signal_strength": 0.85,
+      "model_name": "gpt-4",
+      "created_at": "2026-01-31T10:00:02Z",
+      "delay_ms": 2000
+    }
+  ],
+  "total_duration_ms": 15000,
+  "message_count": 10
+}
+```
+
+**Errors:**
+- `403` - Not authorized to access this session
+- `404` - Session not found
+
+---
+
+## Analytics
+
+### Get Token Analytics
+
+Get token usage analytics for current user.
+
+```http
+GET /api/analytics/tokens
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "overall": {
+    "total_prompt_tokens": 5000,
+    "total_completion_tokens": 3000,
+    "total_tokens": 8000,
+    "message_count": 50,
+    "avg_tokens_per_message": 160.0
+  },
+  "by_session": [
+    {
+      "session_id": "uuid",
+      "session_title": "Python Help",
+      "prompt_tokens": 1000,
+      "completion_tokens": 600,
+      "total_tokens": 1600,
+      "message_count": 10,
+      "created_at": "2026-01-31T10:00:00Z"
+    }
+  ],
+  "by_day": [
+    {
+      "date": "2026-01-31",
+      "prompt_tokens": 2000,
+      "completion_tokens": 1200,
+      "total_tokens": 3200,
+      "message_count": 20
+    }
+  ]
+}
+```
+
+---
+
+### Compare Sessions
+
+Compare two sessions side by side.
+
+```http
+POST /api/analytics/compare
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "session_id_1": "uuid-1",
+  "session_id_2": "uuid-2"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "session_1": {
+    "session_id": "uuid-1",
+    "title": "Session 1",
+    "message_count": 10,
+    "total_tokens": 1500,
+    "avg_confidence": 0.92,
+    "avg_signal_strength": 0.85,
+    "persona_distribution": { "Casual + Cautious": 5, "Technical + Balanced": 3 },
+    "tone_distribution": { "casual": 5, "technical": 3 },
+    "behavior_distribution": { "cautious": 5, "balanced": 3 },
+    "model_used": "gpt-4",
+    "created_at": "2026-01-30T10:00:00Z",
+    "duration_minutes": 15.5
+  },
+  "session_2": {
+    "session_id": "uuid-2",
+    "title": "Session 2",
+    "message_count": 8,
+    "total_tokens": 1200,
+    "avg_confidence": 0.88,
+    "avg_signal_strength": 0.78,
+    "persona_distribution": { "Casual + Balanced": 6, "Cautious + Cautious": 2 },
+    "tone_distribution": { "casual": 6, "cautious": 2 },
+    "behavior_distribution": { "balanced": 6, "cautious": 2 },
+    "model_used": "gpt-4",
+    "created_at": "2026-01-31T10:00:00Z",
+    "duration_minutes": 12.0
+  }
+}
+```
+
+**Errors:**
+- `403` - Not authorized to access session
+- `404` - Session not found
+
+---
+
+## Messages
+
+### Mark Message as Mistake
+
+Mark or unmark an AI message as a mistake.
+
+```http
+PUT /api/message/{message_id}/mistake
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "is_mistake": true,
+  "note": "Incorrect information about Python syntax"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "uuid",
+  "session_id": "uuid",
+  "role": "assistant",
+  "content": "...",
+  "is_mistake": true,
+  "mistake_note": "Incorrect information about Python syntax",
+  "created_at": "2026-01-31T10:00:00Z"
+}
+```
+
+**Errors:**
+- `403` - Not authorized to modify this message
+- `404` - Message not found
+
+---
+
+### Get User Mistakes
+
+Get all messages marked as mistakes for current user.
+
+```http
+GET /api/message/mistakes?limit=50
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "mistakes": [
+    {
+      "id": "uuid",
+      "session_id": "uuid",
+      "role": "assistant",
+      "content": "...",
+      "persona": "technical",
+      "confidence": 0.85,
+      "is_mistake": true,
+      "mistake_note": "Incorrect info",
+      "created_at": "2026-01-31T10:00:00Z"
+    }
+  ],
+  "total": 5
 }
 ```
 

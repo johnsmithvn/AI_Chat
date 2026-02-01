@@ -13,7 +13,7 @@ from app.services.ai_core import ai_core_client
 from app.middlewares.request_id import RequestIDMiddleware
 
 # Import routers
-from app.api import health, chat, session, debug, auth
+from app.api import health, chat, session, debug, auth, analytics, message
 
 # Setup logging
 setup_logging()
@@ -83,6 +83,8 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(session.router)
+app.include_router(message.router)
+app.include_router(analytics.router)
 app.include_router(debug.router)
 
 
