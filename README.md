@@ -124,6 +124,11 @@ AI_Chat_2/
 docker-compose up -d
 ```
 
+```
+- run :
+.\start.bat
+```
+
 ### 2. Setup Backend
 
 ```bash
