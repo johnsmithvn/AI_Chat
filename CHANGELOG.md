@@ -4,6 +4,64 @@ All notable changes to AI Chat 2 project will be documented in this file.
 
 ---
 
+## [1.2.0] - 2026-02-01 (AI Core v2.1 Integration)
+
+### Added
+
+#### Backend - AI Core v2.1 Support
+- **Database Migration**: Added new columns for v2.1 metadata
+  - `signal_strength` (Float) - replaces confidence score
+  - `context_clarity` (Integer 0/1) - was context clear?
+  - `needs_knowledge` (Integer 0/1) - needs RAG?
+  - File: `migrations/versions/2026_02_01_2230-c8d5e3f7a2b4_add_signal_strength_columns.py`
+
+- **SQLAlchemy Model**: Property converters for Integer↔Boolean
+  - `context_clarity` and `needs_knowledge` stored as Integer (0/1) in DB
+  - Python properties convert to/from Boolean for Pydantic
+  - File: `backend/app/db/models.py`
+
+- **Schemas**: Updated with v2.1 fields
+  - `MessageCreate`, `MessageResponse` include new fields
+  - `MetadataSchema` supports both legacy and v2.1 fields
+  - Files: `backend/app/schemas/chat.py`, `backend/app/schemas/common.py`
+
+#### Frontend - v2.1 Display
+- **MessageBubble**: Shows v2.1 metadata indicators
+  - Signal strength display (replaces confidence)
+  - "⚠️ Unclear context" warning when context_clarity=false
+  - "📚 Needs knowledge" indicator when needs_knowledge=true
+  - File: `web/src/components/chat/MessageBubble.tsx`
+
+- **DebugPanel**: Enhanced metadata display
+  - All v2.1 fields with proper labels
+  - File: `web/src/components/chat/DebugPanel.tsx`
+
+- **Types & Store**: Updated for v2.1
+  - `Message` interface includes signal_strength, context_clarity, needs_knowledge
+  - Fallback logic for backward compatibility
+  - Files: `web/src/types/chat.ts`, `web/src/store/chat.store.ts`
+
+### Fixed
+
+- **DELETE /sessions route**: Fixed 405 Method Not Allowed error
+  - Route was `/session` (empty string after prefix), frontend called `/sessions`
+  - Changed `@router.delete("")` to `@router.delete("s")`
+  - File: `backend/app/api/session.py`
+
+- **Metadata extraction**: Simplified for flat v2.1 structure
+  - Removed obsolete `model_info` nested object handling
+  - Model and usage now at top-level of metadata
+  - File: `backend/app/services/chat_service.py`
+
+### Changed
+
+- **Backward Compatibility**: Legacy fields still supported
+  - `confidence` → `signal_strength` (with fallback)
+  - `persona` → `persona_used` (with fallback)
+  - Analytics endpoints support both old and new field names
+
+---
+
 ## [1.1.1] - 2026-01-31
 
 ### Added

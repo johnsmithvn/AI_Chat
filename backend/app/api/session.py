@@ -214,7 +214,7 @@ def get_session_replay(
         raise HTTPException(status_code=500, detail="Failed to get session replay")
 
 
-@router.delete("")
+@router.delete("s")
 def delete_all_sessions(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)

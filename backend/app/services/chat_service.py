@@ -92,31 +92,24 @@ class ChatService:
         
         # 5. Save assistant response with metadata
         metadata = ai_response.get("metadata", {})
-        context = metadata.get("context", {})
-        model_info = metadata.get("model_info", {})
+        context = metadata.get("context", {})  # Legacy nested object for backward compat
         
-        # Extract model name - try multiple locations
-        model_name = None
-        if model_info:
-            model_name = model_info.get("model_name") or model_info.get("model")
-        if not model_name:
-            model_name = metadata.get("model")
+        # v2.1: model and usage are now at top level
+        model_name = metadata.get("model")
+        usage = metadata.get("usage", {})
         
-        # Extract usage - could be in model_info or at metadata level
-        usage = {}
-        if model_info:
-            usage = model_info.get("usage", {})
-        if not usage:
-            usage = metadata.get("usage", {})
-        
+        # v2.1: All fields available at top-level, fallback to context for backward compat
         assistant_msg_data = MessageCreate(
             role="assistant",
             content=ai_response.get("response", ""),
-            persona=metadata.get("persona"),
+            persona=metadata.get("persona_used") or metadata.get("persona"),
             tone=metadata.get("tone"),
             behavior=metadata.get("behavior"),
-            context_type=context.get("context_type"),
-            confidence=context.get("confidence"),
+            context_type=metadata.get("context_type") or context.get("context_type"),
+            confidence=metadata.get("confidence") or context.get("confidence"),
+            signal_strength=metadata.get("signal_strength") or context.get("signal_strength"),
+            context_clarity=metadata.get("context_clarity") if "context_clarity" in metadata else context.get("context_clarity"),
+            needs_knowledge=metadata.get("needs_knowledge") if "needs_knowledge" in metadata else context.get("needs_knowledge"),
             model_name=model_name,
             prompt_tokens=usage.get("prompt_tokens"),
             completion_tokens=usage.get("completion_tokens")
@@ -126,17 +119,34 @@ class ChatService:
         logger.info(
             "process_message_complete",
             session_id=str(db_session.id),
-            persona=metadata.get("persona"),
+            persona=metadata.get("persona_used") or metadata.get("persona"),
             tone=metadata.get("tone"),
             behavior=metadata.get("behavior"),
-            confidence=context.get("confidence")
+            signal_strength=context.get("signal_strength") or metadata.get("signal_strength"),
+            confidence=context.get("confidence") or metadata.get("confidence")
         )
         
         # 6. Return response
         # Build metadata safely with nested objects
         metadata_response = MetadataSchema(
+            # v2.1 fields (top-level)
+            persona_used=metadata.get("persona_used"),
+            tone=metadata.get("tone"),
+            behavior=metadata.get("behavior"),
+            context_type=metadata.get("context_type") or context.get("context_type"),
+            needs_knowledge=metadata.get("needs_knowledge") if "needs_knowledge" in metadata else context.get("needs_knowledge"),
+            signal_strength=metadata.get("signal_strength") or context.get("signal_strength"),
+            context_clarity=metadata.get("context_clarity") if "context_clarity" in metadata else context.get("context_clarity"),
+            # Content metrics
+            length=metadata.get("length"),
+            word_count=metadata.get("word_count"),
+            estimated_read_time=metadata.get("estimated_read_time"),
+            has_code_blocks=metadata.get("has_code_blocks"),
+            # Legacy fields
             persona=metadata.get("persona"),
+            confidence=metadata.get("confidence") or context.get("confidence"),
             context=ContextSchema(**context) if context else None,
+            # Model info
             model=model_name,
             usage=UsageSchema(**usage) if usage else None,
             valid=metadata.get("valid", True),

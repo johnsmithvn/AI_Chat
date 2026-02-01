@@ -31,7 +31,10 @@ class MessageCreate(BaseModel):
     tone: Optional[str] = None  # v2.0: casual | technical
     behavior: Optional[str] = None  # v2.0: normal | cautious
     context_type: Optional[str] = None
-    confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
+    confidence: Optional[float] = Field(None, ge=0.0, le=1.0)  # Legacy
+    signal_strength: Optional[float] = Field(None, ge=0.0, le=1.0)  # v2.1
+    context_clarity: Optional[bool] = None  # v2.1
+    needs_knowledge: Optional[bool] = None  # v2.1
     model_name: Optional[str] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
@@ -48,7 +51,10 @@ class MessageResponse(BaseModel):
     tone: Optional[str] = None  # v2.0
     behavior: Optional[str] = None  # v2.0
     context_type: Optional[str] = None
-    confidence: Optional[float] = None
+    confidence: Optional[float] = None  # Legacy
+    signal_strength: Optional[float] = None  # v2.1
+    context_clarity: Optional[bool] = None  # v2.1
+    needs_knowledge: Optional[bool] = None  # v2.1
     model_name: Optional[str] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None

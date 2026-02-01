@@ -55,9 +55,12 @@ class SessionCompareItem(BaseModel):
     title: Optional[str]
     message_count: int
     total_tokens: int
-    avg_confidence: Optional[float]
-    persona_distribution: dict
-    model_used: Optional[str]
+    avg_confidence: Optional[float] = None  # Legacy
+    avg_signal_strength: Optional[float] = None  # v2.1
+    persona_distribution: dict = {}  # Legacy persona or persona_used
+    tone_distribution: dict = {}  # v2.0+ tone breakdown
+    behavior_distribution: dict = {}  # v2.0+ behavior breakdown
+    model_used: Optional[str] = None
     created_at: datetime
     duration_minutes: float
 

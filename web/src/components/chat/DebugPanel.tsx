@@ -48,17 +48,33 @@ export const DebugPanel: React.FC = () => {
             </h4>
             <div style={{ fontSize: "0.875rem", color: "#4b5563" }}>
               <div style={{ marginBottom: "0.25rem" }}>
-                <strong>Persona:</strong> {currentMetadata.persona || "N/A"}
+                <strong>Persona:</strong> {currentMetadata.persona_used || currentMetadata.persona || "N/A"}
+              </div>
+              {currentMetadata.tone && (
+                <div style={{ marginBottom: "0.25rem" }}>
+                  <strong>Tone:</strong> {currentMetadata.tone}
+                  {currentMetadata.behavior && ` + ${currentMetadata.behavior}`}
+                </div>
+              )}
+              <div style={{ marginBottom: "0.25rem" }}>
+                <strong>Context:</strong> {currentMetadata.context_type || currentMetadata.context?.context_type || "N/A"}
               </div>
               <div style={{ marginBottom: "0.25rem" }}>
-                <strong>Context:</strong> {currentMetadata.context?.context_type || "N/A"}
-              </div>
-              <div style={{ marginBottom: "0.25rem" }}>
-                <strong>Confidence:</strong>{" "}
-                {currentMetadata.context?.confidence !== undefined 
-                  ? (currentMetadata.context.confidence * 100).toFixed(1) + "%"
+                <strong>Signal:</strong>{" "}
+                {(currentMetadata.signal_strength ?? currentMetadata.context?.signal_strength ?? currentMetadata.context?.confidence) !== undefined 
+                  ? ((currentMetadata.signal_strength ?? currentMetadata.context?.signal_strength ?? currentMetadata.context?.confidence)! * 100).toFixed(1) + "%"
                   : "N/A"}
               </div>
+              {currentMetadata.context_clarity !== undefined && (
+                <div style={{ marginBottom: "0.25rem" }}>
+                  <strong>Context Clarity:</strong> {currentMetadata.context_clarity ? "✅ Clear" : "⚠️ Unclear"}
+                </div>
+              )}
+              {currentMetadata.needs_knowledge !== undefined && (
+                <div style={{ marginBottom: "0.25rem" }}>
+                  <strong>Needs Knowledge:</strong> {currentMetadata.needs_knowledge ? "📚 Yes" : "No"}
+                </div>
+              )}
               <div style={{ marginBottom: "0.25rem" }}>
                 <strong>Model:</strong> {currentMetadata.model || "N/A"}
               </div>

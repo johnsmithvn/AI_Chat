@@ -14,9 +14,12 @@ class ReplayMessage(BaseModel):
     id: UUID
     role: str
     content: str
-    persona: Optional[str] = None
+    persona: Optional[str] = None  # Legacy or persona_used
+    tone: Optional[str] = None  # v2.0+
+    behavior: Optional[str] = None  # v2.0+
     context_type: Optional[str] = None
-    confidence: Optional[float] = None
+    confidence: Optional[float] = None  # Legacy
+    signal_strength: Optional[float] = None  # v2.1
     model_name: Optional[str] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None

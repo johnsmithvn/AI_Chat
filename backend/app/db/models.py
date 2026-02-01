@@ -63,7 +63,37 @@ class Message(Base):
     tone = Column(Text, nullable=True)  # v2.0: casual | technical
     behavior = Column(Text, nullable=True)  # v2.0: normal | cautious
     context_type = Column(Text, nullable=True)
-    confidence = Column(Float, CheckConstraint("confidence >= 0 AND confidence <= 1"), nullable=True)
+    confidence = Column(Float, CheckConstraint("confidence >= 0 AND confidence <= 1"), nullable=True)  # Legacy
+    signal_strength = Column(Float, CheckConstraint("signal_strength >= 0 AND signal_strength <= 1"), nullable=True)  # v2.1
+    _context_clarity = Column("context_clarity", Integer, CheckConstraint("context_clarity IN (0, 1)"), nullable=True)  # v2.1: 0=false, 1=true
+    _needs_knowledge = Column("needs_knowledge", Integer, CheckConstraint("needs_knowledge IN (0, 1)"), default=0)  # v2.1: 0=false, 1=true
+    
+    # Properties to convert Integer to Boolean for Pydantic
+    @property
+    def context_clarity(self) -> bool | None:
+        if self._context_clarity is None:
+            return None
+        return self._context_clarity == 1
+    
+    @context_clarity.setter
+    def context_clarity(self, value: bool | None):
+        if value is None:
+            self._context_clarity = None
+        else:
+            self._context_clarity = 1 if value else 0
+    
+    @property
+    def needs_knowledge(self) -> bool | None:
+        if self._needs_knowledge is None:
+            return None
+        return self._needs_knowledge == 1
+    
+    @needs_knowledge.setter
+    def needs_knowledge(self, value: bool | None):
+        if value is None:
+            self._needs_knowledge = None
+        else:
+            self._needs_knowledge = 1 if value else 0
     
     model_name = Column(Text, nullable=True)
     prompt_tokens = Column(Integer, nullable=True)

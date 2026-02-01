@@ -164,15 +164,30 @@ def compare_sessions(
             # Calculate stats
             total_tokens = sum((m.prompt_tokens or 0) + (m.completion_tokens or 0) for m in assistant_msgs)
             
-            # Average confidence
+            # Average confidence (legacy) and signal_strength (v2.1)
             confidences = [m.confidence for m in assistant_msgs if m.confidence is not None]
             avg_confidence = round(sum(confidences) / len(confidences), 3) if confidences else None
             
-            # Persona distribution
+            signal_strengths = [m.signal_strength for m in assistant_msgs if hasattr(m, 'signal_strength') and m.signal_strength is not None]
+            avg_signal_strength = round(sum(signal_strengths) / len(signal_strengths), 3) if signal_strengths else None
+            
+            # Persona distribution (legacy or persona_used from metadata)
             persona_dist = {}
             for m in assistant_msgs:
                 if m.persona:
                     persona_dist[m.persona] = persona_dist.get(m.persona, 0) + 1
+            
+            # Tone distribution (v2.0+)
+            tone_dist = {}
+            for m in assistant_msgs:
+                if hasattr(m, 'tone') and m.tone:
+                    tone_dist[m.tone] = tone_dist.get(m.tone, 0) + 1
+            
+            # Behavior distribution (v2.0+)
+            behavior_dist = {}
+            for m in assistant_msgs:
+                if hasattr(m, 'behavior') and m.behavior:
+                    behavior_dist[m.behavior] = behavior_dist.get(m.behavior, 0) + 1
             
             # Model used (most common)
             models_used = [m.model_name for m in assistant_msgs if m.model_name]
@@ -192,7 +207,10 @@ def compare_sessions(
                 message_count=len(messages),
                 total_tokens=total_tokens,
                 avg_confidence=avg_confidence,
+                avg_signal_strength=avg_signal_strength,
                 persona_distribution=persona_dist,
+                tone_distribution=tone_dist,
+                behavior_distribution=behavior_dist,
                 model_used=model_used,
                 created_at=session.created_at,
                 duration_minutes=round(duration, 2)

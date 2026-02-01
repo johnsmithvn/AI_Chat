@@ -79,11 +79,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 id: Date.now().toString() + "1",
                 session_id: response.session_id,
                 content: response.response,
-                persona: response.metadata.persona || undefined,
+                // v2.1: Use persona_used or fallback to legacy persona
+                persona: response.metadata.persona_used || response.metadata.persona || undefined,
                 tone: response.metadata.tone || undefined,
                 behavior: response.metadata.behavior || undefined,
-                context_type: response.metadata.context?.context_type || undefined,
-                confidence: response.metadata.context?.confidence || undefined,
+                // v2.1: context_type at top level, fallback to nested
+                context_type: response.metadata.context_type || response.metadata.context?.context_type || undefined,
+                // v2.1: signal_strength preferred, fallback to confidence
+                signal_strength: response.metadata.signal_strength || response.metadata.context?.signal_strength || undefined,
+                confidence: response.metadata.confidence || response.metadata.context?.confidence || undefined,
+                // v2.1: new fields
+                context_clarity: response.metadata.context_clarity ?? response.metadata.context?.context_clarity ?? undefined,
+                needs_knowledge: response.metadata.needs_knowledge ?? response.metadata.context?.needs_knowledge ?? undefined,
                 model_name: response.metadata.model || undefined,
                 prompt_tokens: response.metadata.usage?.prompt_tokens || undefined,
                 completion_tokens: response.metadata.usage?.completion_tokens || undefined,
@@ -158,11 +165,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             ? {
                 ...m,
                 content: response.response,
-                persona: response.metadata.persona || undefined,
+                // v2.1: Use persona_used or fallback to legacy persona
+                persona: response.metadata.persona_used || response.metadata.persona || undefined,
                 tone: response.metadata.tone || undefined,
                 behavior: response.metadata.behavior || undefined,
-                context_type: response.metadata.context?.context_type || undefined,
-                confidence: response.metadata.context?.confidence || undefined,
+                // v2.1: context_type at top level, fallback to nested
+                context_type: response.metadata.context_type || response.metadata.context?.context_type || undefined,
+                // v2.1: signal_strength preferred, fallback to confidence
+                confidence: response.metadata.signal_strength || response.metadata.confidence || response.metadata.context?.confidence || undefined,
                 model_name: response.metadata.model || undefined,
                 prompt_tokens: response.metadata.usage?.prompt_tokens || undefined,
                 completion_tokens: response.metadata.usage?.completion_tokens || undefined,

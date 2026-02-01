@@ -488,6 +488,64 @@ VITE_API_URL=http://localhost:3000/api
 
 ---
 
+## AI Core Integration
+
+### Version Support
+
+This service integrates with AI Core and supports multiple versions:
+
+| AI Core Version | Features |
+|-----------------|----------|
+| v1.x | Basic persona, confidence |
+| v2.0 | Tone + Behavior architecture (replaces single persona) |
+| v2.1 | signal_strength (replaces confidence), context_clarity, flat metadata |
+
+### Metadata Schema (v2.1)
+
+```json
+{
+  "persona_used": "Casual + Cautious",
+  "tone": "casual",
+  "behavior": "cautious",
+  "context_type": "casual",
+  "needs_knowledge": true,
+  "signal_strength": 0.85,
+  "context_clarity": true,
+  "confidence": 0.85,
+  "length": 250,
+  "estimated_read_time": 15
+}
+```
+
+### Backward Compatibility
+
+The codebase supports both legacy and new fields:
+
+```typescript
+// Frontend: chat.store.ts fallback logic
+const persona = metadata?.persona_used || metadata?.persona;
+const signal = metadata?.signal_strength ?? metadata?.confidence;
+```
+
+```python
+# Backend: analytics.py fallback logic
+avg_confidence = ...  # Legacy
+avg_signal_strength = ...  # v2.1
+```
+
+### Key Changes by Version
+
+**v2.0 Breaking Changes:**
+- `persona` → `tone` + `behavior` (stored separately)
+- `persona_used` combines them: "Tone + Behavior"
+
+**v2.1 Breaking Changes:**
+- `confidence` → `signal_strength`
+- `content_info.length` → `length` (flattened)
+- Added `context_clarity`, `needs_knowledge`
+
+---
+
 ## Git Workflow
 
 ```bash

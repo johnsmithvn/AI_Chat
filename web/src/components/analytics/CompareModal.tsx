@@ -178,9 +178,17 @@ export default function CompareModal({ isOpen, onClose }: CompareModalProps) {
               <div className="compare-table">
                 {renderComparison('Messages', compareData.session_1.message_count, compareData.session_2.message_count, true)}
                 {renderComparison('Total Tokens', compareData.session_1.total_tokens, compareData.session_2.total_tokens, true)}
-                {renderComparison('Avg Confidence', 
-                  compareData.session_1.avg_confidence !== null ? `${(compareData.session_1.avg_confidence * 100).toFixed(1)}%` : 'N/A',
-                  compareData.session_2.avg_confidence !== null ? `${(compareData.session_2.avg_confidence * 100).toFixed(1)}%` : 'N/A'
+                {renderComparison('Avg Signal', 
+                  compareData.session_1.avg_signal_strength !== null 
+                    ? `${(compareData.session_1.avg_signal_strength * 100).toFixed(1)}%` 
+                    : compareData.session_1.avg_confidence !== null 
+                      ? `${(compareData.session_1.avg_confidence * 100).toFixed(1)}%` 
+                      : 'N/A',
+                  compareData.session_2.avg_signal_strength !== null 
+                    ? `${(compareData.session_2.avg_signal_strength * 100).toFixed(1)}%` 
+                    : compareData.session_2.avg_confidence !== null 
+                      ? `${(compareData.session_2.avg_confidence * 100).toFixed(1)}%` 
+                      : 'N/A'
                 )}
                 {renderComparison('Duration', 
                   `${compareData.session_1.duration_minutes.toFixed(1)} min`,
@@ -192,9 +200,73 @@ export default function CompareModal({ isOpen, onClose }: CompareModalProps) {
                 )}
               </div>
 
-              {/* Persona distribution */}
+              {/* Tone + Behavior Distribution (v2.0+) */}
+              {(Object.keys(compareData.session_1.tone_distribution || {}).length > 0 || 
+                Object.keys(compareData.session_2.tone_distribution || {}).length > 0) && (
+                <div className="compare-personas">
+                  <h4>Tone Distribution</h4>
+                  <div className="compare-persona-grid">
+                    <div className="compare-persona-list">
+                      {Object.entries(compareData.session_1.tone_distribution || {}).map(([tone, count]) => (
+                        <div key={tone} className="persona-item">
+                          <span>{tone}</span>
+                          <span className="persona-count">{count}</span>
+                        </div>
+                      ))}
+                      {Object.keys(compareData.session_1.tone_distribution || {}).length === 0 && (
+                        <div className="persona-empty">No tone data</div>
+                      )}
+                    </div>
+                    <div className="compare-persona-list">
+                      {Object.entries(compareData.session_2.tone_distribution || {}).map(([tone, count]) => (
+                        <div key={tone} className="persona-item">
+                          <span>{tone}</span>
+                          <span className="persona-count">{count}</span>
+                        </div>
+                      ))}
+                      {Object.keys(compareData.session_2.tone_distribution || {}).length === 0 && (
+                        <div className="persona-empty">No tone data</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Behavior Distribution (v2.0+) */}
+              {(Object.keys(compareData.session_1.behavior_distribution || {}).length > 0 || 
+                Object.keys(compareData.session_2.behavior_distribution || {}).length > 0) && (
+                <div className="compare-personas">
+                  <h4>Behavior Distribution</h4>
+                  <div className="compare-persona-grid">
+                    <div className="compare-persona-list">
+                      {Object.entries(compareData.session_1.behavior_distribution || {}).map(([behavior, count]) => (
+                        <div key={behavior} className="persona-item">
+                          <span>{behavior}</span>
+                          <span className="persona-count">{count}</span>
+                        </div>
+                      ))}
+                      {Object.keys(compareData.session_1.behavior_distribution || {}).length === 0 && (
+                        <div className="persona-empty">No behavior data</div>
+                      )}
+                    </div>
+                    <div className="compare-persona-list">
+                      {Object.entries(compareData.session_2.behavior_distribution || {}).map(([behavior, count]) => (
+                        <div key={behavior} className="persona-item">
+                          <span>{behavior}</span>
+                          <span className="persona-count">{count}</span>
+                        </div>
+                      ))}
+                      {Object.keys(compareData.session_2.behavior_distribution || {}).length === 0 && (
+                        <div className="persona-empty">No behavior data</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Legacy Persona distribution */}
               <div className="compare-personas">
-                <h4>Persona Distribution</h4>
+                <h4>Persona Distribution (Legacy)</h4>
                 <div className="compare-persona-grid">
                   <div className="compare-persona-list">
                     {Object.entries(compareData.session_1.persona_distribution).map(([persona, count]) => (

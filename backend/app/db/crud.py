@@ -169,10 +169,15 @@ def create_message(db: Session, session_id: UUID, message_data: MessageCreate) -
         behavior=message_data.behavior,
         context_type=message_data.context_type,
         confidence=message_data.confidence,
+        signal_strength=message_data.signal_strength,
         model_name=message_data.model_name,
         prompt_tokens=message_data.prompt_tokens,
         completion_tokens=message_data.completion_tokens
     )
+    # Use property setters for bool -> int conversion
+    db_message.context_clarity = message_data.context_clarity
+    db_message.needs_knowledge = message_data.needs_knowledge
+    
     db.add(db_message)
     db.commit()
     db.refresh(db_message)

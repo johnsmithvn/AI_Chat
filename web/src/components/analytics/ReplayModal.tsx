@@ -200,12 +200,18 @@ export default function ReplayModal({ isOpen, sessionId, onClose }: ReplayModalP
                     <span className="replay-message-role">
                       {msg.role === 'user' ? '👤 You' : '🤖 AI'}
                     </span>
-                    {msg.persona && (
+                    {/* v2.1: Show tone+behavior or legacy persona */}
+                    {msg.tone ? (
+                      <span className="replay-message-persona">
+                        {msg.tone}{msg.behavior === 'cautious' ? ' ⚠️' : ''}
+                      </span>
+                    ) : msg.persona && (
                       <span className="replay-message-persona">{msg.persona}</span>
                     )}
-                    {msg.confidence !== undefined && (
+                    {/* v2.1: signal_strength, fallback to confidence */}
+                    {(msg.signal_strength ?? msg.confidence) !== undefined && (
                       <span className="replay-message-confidence">
-                        {(msg.confidence * 100).toFixed(0)}%
+                        {((msg.signal_strength ?? msg.confidence ?? 0) * 100).toFixed(0)}%
                       </span>
                     )}
                   </div>

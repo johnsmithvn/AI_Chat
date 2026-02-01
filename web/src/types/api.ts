@@ -70,8 +70,11 @@ export interface SessionCompareItem {
   title: string | null;
   message_count: number;
   total_tokens: number;
-  avg_confidence: number | null;
-  persona_distribution: Record<string, number>;
+  avg_confidence: number | null;  // Legacy
+  avg_signal_strength: number | null;  // v2.1
+  persona_distribution: Record<string, number>;  // Legacy or persona_used
+  tone_distribution: Record<string, number>;  // v2.0+
+  behavior_distribution: Record<string, number>;  // v2.0+
   model_used: string | null;
   created_at: string;
   duration_minutes: number;
@@ -87,9 +90,12 @@ export interface ReplayMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  persona?: string;
+  persona?: string;  // Legacy or persona_used
+  tone?: string;  // v2.0+
+  behavior?: string;  // v2.0+
   context_type?: string;
-  confidence?: number;
+  confidence?: number;  // Legacy
+  signal_strength?: number;  // v2.1
   model_name?: string;
   prompt_tokens?: number;
   completion_tokens?: number;
@@ -116,9 +122,12 @@ export interface MistakeMessage {
   session_id: string;
   role: string;
   content: string;
-  persona?: string;
+  persona?: string;  // Legacy
+  tone?: string;  // v2.0+
+  behavior?: string;  // v2.0+
   context_type?: string;
-  confidence?: number;
+  confidence?: number;  // Legacy
+  signal_strength?: number;  // v2.1
   model_name?: string;
   prompt_tokens?: number;
   completion_tokens?: number;

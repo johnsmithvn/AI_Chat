@@ -316,19 +316,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
               flexWrap: "wrap",
             }}
           >
-            {/* v2.0: Show tone + behavior */}
+            {/* v2.1+: Show tone + behavior or persona_used */}
             {message.tone ? (
-              <>
-                <span
-                  style={{
-                    color: getPersonaColor(undefined, message.tone, message.behavior),
-                    fontWeight: "500",
-                  }}
-                >
-                  {message.tone}
-                  {message.behavior === "cautious" && " ⚠️"}
-                </span>
-              </>
+              <span
+                style={{
+                  color: getPersonaColor(undefined, message.tone, message.behavior),
+                  fontWeight: "500",
+                }}
+              >
+                {message.tone}
+                {message.behavior === "cautious" && " ⚠️"}
+              </span>
+            ) : message.persona?.includes("+") ? (
+              /* v2.1: persona_used like "Casual + Cautious" */
+              <span
+                style={{
+                  color: message.persona.toLowerCase().includes("cautious") ? "#f59e0b" : "#10b981",
+                  fontWeight: "500",
+                }}
+              >
+                {message.persona}
+              </span>
             ) : (
               /* Legacy: Show persona */
               <span
@@ -340,8 +348,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
                 {message.persona}
               </span>
             )}
-            {message.confidence !== undefined && (
-              <span>Confidence: {(message.confidence * 100).toFixed(0)}%</span>
+            {message.confidence !== undefined && message.confidence > 0 && (
+              <span>Signal: {((message.signal_strength ?? message.confidence) * 100).toFixed(0)}%</span>
+            )}
+            {message.context_clarity === false && (
+              <span style={{ color: "#f59e0b" }}>⚠️ Unclear context</span>
+            )}
+            {message.needs_knowledge && (
+              <span style={{ color: "#8b5cf6" }}>📚 Needs knowledge</span>
             )}
           </div>
         )}

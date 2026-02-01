@@ -120,6 +120,39 @@ This document archives all completed tasks from the AI Chat v2 development proce
 
 ---
 
+## V3.1 Features - AI Core v2.1 Integration (Completed 2026-02-01)
+
+### AI Core v2.0 Support (Tone + Behavior Architecture)
+- ✅ Database migration (tone, behavior columns)
+- ✅ Backend schemas updated (common.py, chat.py, replay.py, analytics.py)
+- ✅ Backend API updated (analytics.py compare endpoint)
+- ✅ Frontend types updated (chat.ts, api.ts)
+- ✅ chat.store.ts updated with persona_used, tone, behavior support
+- ✅ MessageBubble shows "Tone + Behavior" format (e.g., "Casual + Cautious")
+
+### AI Core v2.1 Support (Breaking Changes)
+- ✅ signal_strength replaces confidence (with backward compatibility)
+- ✅ context_clarity field support
+- ✅ needs_knowledge field support
+- ✅ Flat metadata structure (content_info metrics inline)
+- ✅ ReplayModal updated with tone/behavior display
+- ✅ CompareModal updated with tone_distribution, behavior_distribution
+- ✅ Fallback logic: signal_strength || confidence, persona_used || persona
+
+### Bug Fixes
+- ✅ DELETE /sessions route fix (was returning 405 Method Not Allowed)
+- ✅ Simplified metadata extraction (removed obsolete model_info handling)
+- ✅ SQLAlchemy Integer↔Boolean property converters for context_clarity, needs_knowledge
+
+### Documentation Updates
+- ✅ API_REFERENCE.md updated with v2.1 response examples
+- ✅ API_REFERENCE.md added Delete All Sessions endpoint
+- ✅ CHANGELOG.md added v1.2.0 entry
+- ✅ DATABASE_SCHEMA.md updated with new columns
+- ✅ COMPLETED_TASKS.md updated
+
+---
+
 ## Future Enhancements (Planned)
 
 ### Phase 7: Admin & DevOps (Not Started)

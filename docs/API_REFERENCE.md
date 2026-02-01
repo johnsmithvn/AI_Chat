@@ -288,6 +288,29 @@ Authorization: Bearer <access_token>
 
 ---
 
+### Delete All Sessions
+
+Delete ALL sessions for the current user.
+
+```http
+DELETE /api/sessions
+Authorization: Bearer <access_token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "deleted": 5
+}
+```
+
+**Notes:**
+- Deletes all sessions and their messages for the authenticated user
+- Returns count of deleted sessions
+- This action cannot be undone
+
+---
+
 ### Session Replay
 
 Get session replay data with timing information for playback.
@@ -308,7 +331,11 @@ Authorization: Bearer <access_token>
       "role": "user",
       "content": "Hello",
       "persona": null,
+      "tone": null,
+      "behavior": null,
+      "context_type": null,
       "confidence": null,
+      "signal_strength": null,
       "model_name": null,
       "created_at": "2026-01-31T10:00:00Z",
       "delay_ms": 0
@@ -317,8 +344,12 @@ Authorization: Bearer <access_token>
       "id": "uuid",
       "role": "assistant",
       "content": "Hi! How can I help?",
-      "persona": "casual",
+      "persona": "Casual + Cautious",
+      "tone": "casual",
+      "behavior": "cautious",
+      "context_type": "casual",
       "confidence": 0.95,
+      "signal_strength": 0.85,
       "model_name": "gpt-4",
       "created_at": "2026-01-31T10:00:02Z",
       "delay_ms": 2000
@@ -408,7 +439,10 @@ Content-Type: application/json
     "message_count": 10,
     "total_tokens": 1500,
     "avg_confidence": 0.92,
-    "persona_distribution": { "casual": 5, "technical": 3 },
+    "avg_signal_strength": 0.85,
+    "persona_distribution": { "Casual + Cautious": 5, "Technical + Balanced": 3 },
+    "tone_distribution": { "casual": 5, "technical": 3 },
+    "behavior_distribution": { "cautious": 5, "balanced": 3 },
     "model_used": "gpt-4",
     "created_at": "2026-01-30T10:00:00Z",
     "duration_minutes": 15.5
@@ -419,7 +453,10 @@ Content-Type: application/json
     "message_count": 8,
     "total_tokens": 1200,
     "avg_confidence": 0.88,
-    "persona_distribution": { "casual": 6, "cautious": 2 },
+    "avg_signal_strength": 0.78,
+    "persona_distribution": { "Casual + Balanced": 6, "Cautious + Cautious": 2 },
+    "tone_distribution": { "casual": 6, "cautious": 2 },
+    "behavior_distribution": { "balanced": 6, "cautious": 2 },
     "model_used": "gpt-4",
     "created_at": "2026-01-31T10:00:00Z",
     "duration_minutes": 12.0
