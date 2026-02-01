@@ -5,10 +5,11 @@ import { useEffect, useState, useRef } from 'react';
 import { useChatStore } from '../../store/chat.store';
 import ConfirmDialog from '../common/ConfirmDialog';
 import InputDialog from '../common/InputDialog';
+import ReplayModal from '../analytics/ReplayModal';
 import './Sidebar.css';
 
 interface DialogState {
-  type: 'delete' | 'deleteAll' | 'rename' | null;
+  type: 'delete' | 'deleteAll' | 'rename' | 'replay' | null;
   sessionId?: string;
   sessionTitle?: string;
 }
@@ -54,6 +55,12 @@ export default function Sidebar() {
     e.stopPropagation();
     setOpenMenuId(null);
     setDialog({ type: 'rename', sessionId, sessionTitle: currentTitle });
+  };
+
+  const openReplayDialog = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    setDialog({ type: 'replay', sessionId });
   };
 
   const openDeleteAllDialog = () => {
@@ -131,6 +138,13 @@ export default function Sidebar() {
                         Rename
                       </button>
                       <button
+                        className="dropdown-item"
+                        onClick={(e) => openReplayDialog(session.id, e)}
+                      >
+                        <span className="dropdown-icon">▶️</span>
+                        Replay
+                      </button>
+                      <button
                         className="dropdown-item dropdown-item-delete"
                         onClick={(e) => openDeleteDialog(session.id, e)}
                       >
@@ -180,6 +194,13 @@ export default function Sidebar() {
         cancelText="Cancel"
         onConfirm={handleConfirmRename}
         onCancel={closeDialog}
+      />
+
+      {/* Replay Session Modal */}
+      <ReplayModal
+        isOpen={dialog.type === 'replay'}
+        sessionId={dialog.sessionId || null}
+        onClose={closeDialog}
       />
     </>
   );

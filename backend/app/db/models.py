@@ -67,6 +67,10 @@ class Message(Base):
     prompt_tokens = Column(Integer, nullable=True)
     completion_tokens = Column(Integer, nullable=True)
     
+    # Mistake tracking
+    is_mistake = Column(Integer, default=0)  # 0=normal, 1=marked as mistake
+    mistake_note = Column(Text, nullable=True)
+    
     created_at = Column(TIMESTAMP, server_default=func.now())
     
     # Relationships

@@ -3,7 +3,7 @@
  */
 import axios from "axios";
 import { API_BASE_URL } from "../config/env";
-import type { ChatRequest, ChatResponse, SessionResponse, HistoryResponse, SessionListResponse } from "../types/api";
+import type { ChatRequest, ChatResponse, SessionResponse, HistoryResponse, SessionListResponse, TokenAnalyticsResponse, SessionCompareResponse, SessionReplayResponse, MistakeMessage, MistakesListResponse } from "../types/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -79,6 +79,54 @@ export const chatApi = {
    */
   renameSession: async (sessionId: string, title: string): Promise<SessionResponse> => {
     const response = await api.put<SessionResponse>(`/session/${sessionId}`, { title });
+    return response.data;
+  },
+
+  /**
+   * Get token analytics
+   */
+  getTokenAnalytics: async (): Promise<TokenAnalyticsResponse> => {
+    const response = await api.get<TokenAnalyticsResponse>("/analytics/tokens");
+    return response.data;
+  },
+
+  /**
+   * Compare two sessions
+   */
+  compareSessions: async (sessionId1: string, sessionId2: string): Promise<SessionCompareResponse> => {
+    const response = await api.post<SessionCompareResponse>("/analytics/compare", {
+      session_id_1: sessionId1,
+      session_id_2: sessionId2,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get session replay data
+   */
+  getSessionReplay: async (sessionId: string): Promise<SessionReplayResponse> => {
+    const response = await api.get<SessionReplayResponse>(`/session/${sessionId}/replay`);
+    return response.data;
+  },
+
+  /**
+   * Mark/unmark message as mistake
+   */
+  markMistake: async (messageId: string, isMistake: boolean, note?: string): Promise<MistakeMessage> => {
+    const response = await api.put<MistakeMessage>(`/message/${messageId}/mistake`, {
+      is_mistake: isMistake,
+      note: note,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get all mistakes
+   */
+  getMistakes: async (limit?: number): Promise<MistakesListResponse> => {
+    const response = await api.get<MistakesListResponse>("/message/mistakes", {
+      params: limit ? { limit } : undefined,
+    });
     return response.data;
   },
 };

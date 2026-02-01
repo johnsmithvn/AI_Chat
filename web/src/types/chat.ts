@@ -13,7 +13,12 @@ export interface Message {
   model_name?: string;
   prompt_tokens?: number;
   completion_tokens?: number;
+  is_mistake?: boolean;
+  mistake_note?: string;
   created_at: string;
+  // Error handling
+  isError?: boolean;
+  errorMessage?: string;
 }
 
 export interface Context {

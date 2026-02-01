@@ -4,6 +4,126 @@ All notable changes to AI Chat 2 project will be documented in this file.
 
 ---
 
+## [1.1.1] - 2026-01-31
+
+### Added
+
+#### Frontend - Error Handling & Retry
+- **MessageBubble**: Error state display with retry functionality
+  - Shows error message when API call fails (red background, warning icon)
+  - "Retry" button to resend the failed message
+  - Loading dots animation while waiting for response
+  - Shake animation on error
+  - File: `web/src/components/chat/MessageBubble.tsx`
+
+- **Chat Store**: Added `retryMessage()` action
+  - Finds the original user message before the error
+  - Resends to API and updates response
+  - Handles error state transitions
+  - File: `web/src/store/chat.store.ts`
+
+- **Message Type**: Added error fields
+  - `isError?: boolean` - indicates error state
+  - `errorMessage?: string` - error description
+  - File: `web/src/types/chat.ts`
+
+### Changed
+- **sendMessage()**: Now creates placeholder assistant message immediately
+  - Shows loading dots while waiting for response
+  - Updates placeholder with real response or error state
+  - Better UX with immediate feedback
+
+- **MessageBubble.css**: Added new styles
+  - `.error-bubble` with shake animation
+  - `.btn-retry` button with hover effects
+  - `.loading-dots` with bouncing animation
+
+---
+
+## [1.1.0] - 2026-01-31 (Phase 6: Advanced Features)
+
+### Added
+
+#### Backend - Analytics API
+- **GET /analytics/tokens**: Token usage analytics endpoint
+  - Overall stats (total tokens, message count, avg per message)
+  - By session breakdown
+  - By day breakdown (last 30 days)
+  - File: `backend/app/api/analytics.py`
+
+- **POST /analytics/compare**: Compare two sessions endpoint
+  - Side-by-side session comparison
+  - Token stats, confidence, persona distribution
+  - Duration calculation
+  - File: `backend/app/api/analytics.py`
+
+- **GET /session/{id}/replay**: Session replay endpoint
+  - Returns messages with timing delays
+  - Calculated delay between messages (capped at 10s)
+  - File: `backend/app/api/session.py`
+  - Schema: `backend/app/schemas/replay.py`
+
+- **PUT /message/{id}/mistake**: Mark message as AI mistake
+  - Toggle mistake flag with optional note
+  - File: `backend/app/api/message.py`
+
+- **GET /message/mistakes**: Get all marked mistakes
+  - Lists all messages marked as mistakes for user
+  - File: `backend/app/api/message.py`
+
+#### Backend - Database
+- **Migration**: Added `is_mistake` and `mistake_note` columns to messages table
+  - File: `migrations/versions/2026_01_31_1000-b7c4d2e8f9a1_add_is_mistake_column.py`
+
+- **New CRUD functions**:
+  - `get_message()`, `mark_message_mistake()`, `get_user_mistakes()`, `check_message_ownership()`
+  - File: `backend/app/db/crud.py`
+
+#### Frontend - Analytics Components
+- **AnalyticsModal**: Token usage analytics display
+  - Overview with stat cards and token distribution bar
+  - By Session tab with sortable table
+  - By Day tab with usage history
+  - Files: `web/src/components/analytics/AnalyticsModal.tsx`, `AnalyticsModal.css`
+
+- **ReplayModal**: Session replay with animated playback
+  - Play/Pause/Restart controls
+  - Adjustable speed (0.5x - 10x)
+  - Progress bar and message counter
+  - Keyboard shortcuts (Space to play/pause, Escape to close)
+  - Files: `web/src/components/analytics/ReplayModal.tsx`, `ReplayModal.css`
+
+- **CompareModal**: Compare two sessions side-by-side
+  - Session selector dropdowns
+  - Comparison table (messages, tokens, confidence, duration, model)
+  - Persona distribution comparison
+  - Files: `web/src/components/analytics/CompareModal.tsx`, `CompareModal.css`
+
+#### Frontend - Mark AI Mistakes
+- **MessageBubble**: Added "Mark mistake" button on AI messages
+  - Visual indicator for marked messages (red border, light red background)
+  - Toggle to mark/unmark mistakes
+  - File: `web/src/components/chat/MessageBubble.tsx`
+
+#### Frontend - UI Integration
+- **TopBar**: Added Analytics and Compare buttons
+  - Quick access to analytics and session comparison
+  - File: `web/src/components/layout/TopBar.tsx`, `TopBar.css`
+
+- **Sidebar**: Added Replay option in session dropdown
+  - Replay button in session menu
+  - File: `web/src/components/layout/Sidebar.tsx`
+
+#### API Types
+- New types: `TokenAnalyticsResponse`, `SessionCompareResponse`, `SessionReplayResponse`, `MistakesListResponse`
+- File: `web/src/types/api.ts`
+
+### Changed
+- **chat.api.ts**: Added new API methods
+  - `getTokenAnalytics()`, `compareSessions()`, `getSessionReplay()`, `markMistake()`, `getMistakes()`
+
+---
+
 ## [1.0.3] - 2026-01-31
 
 ### Added

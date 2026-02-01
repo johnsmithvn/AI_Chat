@@ -88,16 +88,45 @@ This document archives all completed tasks from the AI Chat v2 development proce
 
 ---
 
+## V3.0 Features - Phase 6 (Completed 2026-01-31)
+
+### Token Usage Analytics
+- ✅ Backend analytics API (GET /analytics/tokens)
+- ✅ Overall token stats (total, avg per message)
+- ✅ By session breakdown
+- ✅ By day breakdown (last 30 days)
+- ✅ AnalyticsModal component with tabs
+- ✅ Token distribution chart
+
+### Session Replay
+- ✅ Backend replay endpoint (GET /session/{id}/replay)
+- ✅ Message timing calculation
+- ✅ ReplayModal with animated playback
+- ✅ Play/Pause/Restart controls
+- ✅ Adjustable playback speed (0.5x - 10x)
+- ✅ Progress bar and keyboard shortcuts
+
+### Compare Sessions
+- ✅ Backend compare endpoint (POST /analytics/compare)
+- ✅ Session stats comparison (tokens, confidence, duration)
+- ✅ Persona distribution comparison
+- ✅ CompareModal with side-by-side view
+
+### Mark AI Mistakes
+- ✅ Database migration (is_mistake, mistake_note columns)
+- ✅ Backend API (PUT /message/{id}/mistake, GET /message/mistakes)
+- ✅ Mark/unmark button in MessageBubble
+- ✅ Visual indicator for marked messages
+
+---
+
 ## Future Enhancements (Planned)
 
-### Phase 6: Advanced Features (Not Started)
-- ⏳ Session replay / analytics
-- ⏳ Token usage analytics
-- ⏳ Compare 2 sessions
-- ⏳ Mark AI mistakes
+### Phase 7: Admin & DevOps (Not Started)
 - ⏳ Admin panel
 - ⏳ Docker containerization
 - ⏳ CI/CD pipeline
+- ⏳ User management dashboard
 
 ---
 

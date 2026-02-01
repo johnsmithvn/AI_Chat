@@ -19,6 +19,30 @@
   font-weight: 600;
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.topbar-btn {
+  background: #2a2b32;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.topbar-btn:hover {
+  background: #3a3b42;
+  color: #fff;
+  border-color: #555;
+}
+
 .topbar-user {
   position: relative;
 }
