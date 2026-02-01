@@ -7,7 +7,9 @@ export interface Message {
   session_id: string;
   role: "user" | "assistant";
   content: string;
-  persona?: string;
+  persona?: string;  // Legacy
+  tone?: string;  // v2.0: casual | technical
+  behavior?: string;  // v2.0: normal | cautious
   context_type?: string;
   confidence?: number;
   model_name?: string;
@@ -40,8 +42,10 @@ export interface ContentInfo {
 }
 
 export interface Metadata {
-  persona: string | null;
-  response_mode?: string | null;
+  persona: string | null;  // Legacy - sẽ được build từ tone+behavior
+  tone?: string | null;  // v2.0: casual | technical
+  behavior?: string | null;  // v2.0: normal | cautious
+  response_mode?: string | null;  // deprecated
   context: Context | null;
   model: string | null;
   usage: Usage | null;

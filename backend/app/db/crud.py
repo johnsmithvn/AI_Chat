@@ -165,6 +165,8 @@ def create_message(db: Session, session_id: UUID, message_data: MessageCreate) -
         role=message_data.role,
         content=message_data.content,
         persona=message_data.persona,
+        tone=message_data.tone,
+        behavior=message_data.behavior,
         context_type=message_data.context_type,
         confidence=message_data.confidence,
         model_name=message_data.model_name,

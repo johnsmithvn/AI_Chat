@@ -59,7 +59,9 @@ class Message(Base):
     content = Column(Text, nullable=False)
     
     # AI Metadata (chỉ có khi role = 'assistant')
-    persona = Column(Text, nullable=True)
+    persona = Column(Text, nullable=True)  # Legacy - built from tone+behavior
+    tone = Column(Text, nullable=True)  # v2.0: casual | technical
+    behavior = Column(Text, nullable=True)  # v2.0: normal | cautious
     context_type = Column(Text, nullable=True)
     confidence = Column(Float, CheckConstraint("confidence >= 0 AND confidence <= 1"), nullable=True)
     

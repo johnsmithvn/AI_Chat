@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { Message } from "../../types/chat";
 import { chatApi } from "../../services/chat.api";
 import { useChatStore } from "../../store/chat.store";
@@ -16,7 +16,22 @@ interface MessageBubbleProps {
   onMistakeToggle?: (messageId: string, isMistake: boolean) => void;
 }
 
-const getPersonaColor = (persona?: string) => {
+const getPersonaColor = (persona?: string, tone?: string, behavior?: string) => {
+  // v2.0: Ưu tiên tone+behavior
+  if (tone || behavior) {
+    // Behavior cautious luôn có màu warning
+    if (behavior?.toLowerCase() === "cautious") {
+      return "#f59e0b";
+    }
+    // Tone-based color
+    switch (tone?.toLowerCase()) {
+      case "casual":
+        return "#10b981";
+      case "technical":
+        return "#3b82f6";
+    }
+  }
+  // Legacy persona support
   switch (persona?.toLowerCase()) {
     case "casual":
       return "#10b981";
@@ -177,7 +192,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
               remarkPlugins={[remarkGfm]}
               components={{
                 // Code blocks with syntax highlighting
-                code({ node, className, children, ...props }) {
+                code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || "");
                   const isInline = !match && !className;
                   
@@ -287,7 +302,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
           )}
         </div>
 
-        {!isUser && message.persona && (
+        {/* Persona/Tone+Behavior display */}
+        {!isUser && (message.persona || message.tone) && (
           <div
             style={{
               marginTop: "0.5rem",
@@ -297,16 +313,33 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onMistake
               color: "#6b7280",
               display: "flex",
               gap: "0.75rem",
+              flexWrap: "wrap",
             }}
           >
-            <span
-              style={{
-                color: getPersonaColor(message.persona),
-                fontWeight: "500",
-              }}
-            >
-              {message.persona}
-            </span>
+            {/* v2.0: Show tone + behavior */}
+            {message.tone ? (
+              <>
+                <span
+                  style={{
+                    color: getPersonaColor(undefined, message.tone, message.behavior),
+                    fontWeight: "500",
+                  }}
+                >
+                  {message.tone}
+                  {message.behavior === "cautious" && " ⚠️"}
+                </span>
+              </>
+            ) : (
+              /* Legacy: Show persona */
+              <span
+                style={{
+                  color: getPersonaColor(message.persona),
+                  fontWeight: "500",
+                }}
+              >
+                {message.persona}
+              </span>
+            )}
             {message.confidence !== undefined && (
               <span>Confidence: {(message.confidence * 100).toFixed(0)}%</span>
             )}

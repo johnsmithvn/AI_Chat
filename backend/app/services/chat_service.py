@@ -113,6 +113,8 @@ class ChatService:
             role="assistant",
             content=ai_response.get("response", ""),
             persona=metadata.get("persona"),
+            tone=metadata.get("tone"),
+            behavior=metadata.get("behavior"),
             context_type=context.get("context_type"),
             confidence=context.get("confidence"),
             model_name=model_name,
@@ -125,6 +127,8 @@ class ChatService:
             "process_message_complete",
             session_id=str(db_session.id),
             persona=metadata.get("persona"),
+            tone=metadata.get("tone"),
+            behavior=metadata.get("behavior"),
             confidence=context.get("confidence")
         )
         

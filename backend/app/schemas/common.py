@@ -28,8 +28,10 @@ class ContentInfoSchema(BaseModel):
 
 class MetadataSchema(BaseModel):
     """AI metadata from AI Core"""
-    persona: Optional[str] = Field(None, description="Selected persona (Casual, Technical, Cautious)")
-    response_mode: Optional[str] = Field(None, description="Response mode (casual, technical, cautious)")
+    persona: Optional[str] = Field(None, description="Legacy - built from tone+behavior")
+    tone: Optional[str] = Field(None, description="v2.0: casual | technical")
+    behavior: Optional[str] = Field(None, description="v2.0: normal | cautious")
+    response_mode: Optional[str] = Field(None, description="Deprecated - use tone+behavior")
     context: Optional[ContextSchema] = None
     model: Optional[str] = Field(None, description="Model name used")
     usage: Optional[UsageSchema] = None

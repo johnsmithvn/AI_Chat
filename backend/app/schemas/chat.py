@@ -27,7 +27,9 @@ class MessageCreate(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     role: str = Field(..., pattern="^(user|assistant)$")
     content: str
-    persona: Optional[str] = None
+    persona: Optional[str] = None  # Legacy
+    tone: Optional[str] = None  # v2.0: casual | technical
+    behavior: Optional[str] = None  # v2.0: normal | cautious
     context_type: Optional[str] = None
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
     model_name: Optional[str] = None
@@ -42,7 +44,9 @@ class MessageResponse(BaseModel):
     session_id: UUID
     role: str
     content: str
-    persona: Optional[str] = None
+    persona: Optional[str] = None  # Legacy
+    tone: Optional[str] = None  # v2.0
+    behavior: Optional[str] = None  # v2.0
     context_type: Optional[str] = None
     confidence: Optional[float] = None
     model_name: Optional[str] = None
