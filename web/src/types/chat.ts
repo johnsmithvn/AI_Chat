@@ -32,11 +32,20 @@ export interface Usage {
   completion_tokens?: number;
 }
 
+export interface ContentInfo {
+  word_count?: number;
+  char_count?: number;
+  estimated_read_time?: string;
+  has_code_blocks?: boolean;
+}
+
 export interface Metadata {
   persona: string | null;
+  response_mode?: string | null;
   context: Context | null;
   model: string | null;
   usage: Usage | null;
+  content_info?: ContentInfo | null;
   valid: boolean;
   warnings: string[];
 }
